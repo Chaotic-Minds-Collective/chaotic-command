@@ -54,6 +54,37 @@ export function createHandlers(env, api, store) {
   /** Resolve a guild's name for message templates, with a fallback. */
   const guildName = async (guildId) => (await api('GET', `/guilds/${guildId}`))?.name ?? 'your server';
 
+  /** Fail closed unless the actor outranks the target in the guild role hierarchy. */
+  const moderationHierarchyBlock = async (interaction, targetId) => {
+    const guildId = interaction.guild_id;
+    const actorId = interaction.member?.user?.id;
+    if (!actorId || !targetId) return 'Unable to verify the member hierarchy. Moderation was canceled.';
+    if (actorId === targetId) return 'You cannot moderate yourself.';
+
+    try {
+      const [guild, roles, target] = await Promise.all([
+        api('GET', '/guilds/' + guildId),
+        api('GET', '/guilds/' + guildId + '/roles'),
+        api('GET', '/guilds/' + guildId + '/members/' + targetId),
+      ]);
+      if (targetId === guild.owner_id) return 'The server owner cannot be moderated.';
+      if (actorId === guild.owner_id) return null;
+      if (!Array.isArray(roles) || !Array.isArray(target?.roles) || !Array.isArray(interaction.member.roles)) {
+        return 'Unable to verify the member hierarchy. Moderation was canceled.';
+      }
+
+      const positions = new Map(roles.map((role) => [role.id, Number(role.position) || 0]));
+      positions.set(guildId, 0); // @everyone
+      const highestPosition = (roleIds) => Math.max(0, ...roleIds.map((id) => positions.get(id) ?? 0));
+      const actorPosition = highestPosition(interaction.member.roles);
+      const targetPosition = highestPosition(target.roles);
+      if (targetPosition >= actorPosition) return 'You can only moderate members with roles lower than your highest role.';
+      return null;
+    } catch {
+      return 'Unable to verify the member hierarchy. Moderation was canceled.';
+    }
+  };
+
   /** Post a moderation action summary to the configured mod-log channel. */
   const logMod = async (guildId, config, actorMention, line) => {
     if (!config.mod_log_channel_id) return;
@@ -204,6 +235,8 @@ export function createHandlers(env, api, store) {
       if (sub === 'ban') {
         const blocked = requireGuild(interaction) ?? requirePermissions(interaction, 'BAN_MEMBERS');
         if (blocked) return blocked;
+        const hierarchyBlock = await moderationHierarchyBlock(interaction, targetId);
+        if (hierarchyBlock) return reply([container(COLORS.DANGER, textDisplay(hierarchyBlock))], EPHEMERAL_V2);
         const days = Number(subOptions.get('delete_days') ?? 0);
         await api('PUT', `/guilds/${guildId}/bans/${targetId}`, { delete_message_seconds: Math.min(days * 86400, 604800) });
         await logMod(guildId, config, actor, `**Banned** <@${targetId}> - ${reason}${days ? ` (purged ${days}d of messages)` : ''}`);
@@ -212,6 +245,8 @@ export function createHandlers(env, api, store) {
       if (sub === 'kick') {
         const blocked = requireGuild(interaction) ?? requirePermissions(interaction, 'KICK_MEMBERS');
         if (blocked) return blocked;
+        const hierarchyBlock = await moderationHierarchyBlock(interaction, targetId);
+        if (hierarchyBlock) return reply([container(COLORS.DANGER, textDisplay(hierarchyBlock))], EPHEMERAL_V2);
         await api('DELETE', `/guilds/${guildId}/members/${targetId}`);
         await logMod(guildId, config, actor, `**Kicked** <@${targetId}> - ${reason}`);
         return reply([container(COLORS.SUCCESS, textDisplay(`**Kicked** <@${targetId}> - ${reason}`))], EPHEMERAL_V2);
@@ -219,6 +254,8 @@ export function createHandlers(env, api, store) {
       if (sub === 'timeout') {
         const blocked = requireGuild(interaction) ?? requirePermissions(interaction, 'MODERATE_MEMBERS');
         if (blocked) return blocked;
+        const hierarchyBlock = await moderationHierarchyBlock(interaction, targetId);
+        if (hierarchyBlock) return reply([container(COLORS.DANGER, textDisplay(hierarchyBlock))], EPHEMERAL_V2);
         const minutes = Number(subOptions.get('minutes'));
         const until = new Date(Date.now() + minutes * 60000).toISOString();
         await api('PATCH', `/guilds/${guildId}/members/${targetId}`, { communication_disabled_until: until });

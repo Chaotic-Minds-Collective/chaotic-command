@@ -62,7 +62,13 @@ function makeMocks() {
       const p = url.pathname.replace('/api/v10', '');
       let match;
       if ((match = p.match(/^\/guilds\/(\d+)$/)) && method === 'GET') {
-        return Response.json({ id: match[1], name: 'Test Server' });
+        return Response.json({ id: match[1], name: 'Test Server', owner_id: '888000111222333444' });
+      }
+      if ((match = p.match(/^\/guilds\/(\d+)\/roles$/)) && method === 'GET') {
+        return Response.json([{ id: 'actor-role', position: 10 }, { id: 'target-role', position: 5 }, { id: 'elevated-role', position: 15 }]);
+      }
+      if ((match = p.match(/^\/guilds\/(\d+)\/members\/(\d+)$/)) && method === 'GET') {
+        return Response.json({ user: { id: match[2] }, roles: [match[2] === '999000111222333445' ? 'elevated-role' : 'target-role'] });
       }
       if ((match = p.match(/^\/guilds\/(\d+)\/channels$/)) && method === 'POST') {
         const channel = { id: `ch-${discord.channels.size + 1}`, ...body };
@@ -124,7 +130,7 @@ function makeMocks() {
   return { fetcher, calls, discord, tables };
 }
 
-const MEMBER = { user: { id: '111222333444555666', username: 'psy' }, permissions: '1099511636006' };
+const MEMBER = { user: { id: '111222333444555666', username: 'psy' }, permissions: '1099511636006', roles: ['actor-role'] };
 const ADMIN = { user: { id: '111222333444555666' }, permissions: `${1n << 5n}` }; // MANAGE_GUILD only
 const MEMBER_NO_PERMS = { user: { id: '111222333444555666' }, permissions: '0' };
 
@@ -361,6 +367,10 @@ test('moderation: permissions enforced, actions logged', async () => {
   assert.equal(denied.status, 200);
   assert.ok(JSON.stringify(denied.json.data.components).includes('BAN_MEMBERS'));
   assert.equal(mocks.discord.bans.length, 0);
+
+  const hierarchyDenied = await send(app, commandPayload('mod', [{ name: 'ban', options: [{ name: 'user', value: '999000111222333445' }] }]));
+  assert.ok(JSON.stringify(hierarchyDenied.json.data.components).includes('lower than your highest role'));
+  assert.equal(mocks.discord.bans.length, 0, 'higher-ranked target must not be banned');
 
   await send(app, commandPayload('mod', [{ name: 'ban', options: [{ name: 'user', value: '999000111222333444' }, { name: 'reason', value: 'spamming' }, { name: 'delete_days', value: 3 }] }]));
   assert.equal(mocks.discord.bans.length, 1);

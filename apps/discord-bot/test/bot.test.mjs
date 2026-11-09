@@ -268,9 +268,15 @@ test('ticket panel, open modal, creation with overwrites, claim, close', async (
   const claimed = await send(app, { ...commandPayload('ticket'), type: 3, data: { id: '10', custom_id: `cc_ticket:claim:${ticketRow.id}` } });
   assert.ok(JSON.stringify(claimed.json.data.components).includes('claimed'));
 
-  // Close flow: confirm, then deny SEND_MESSAGES for the owner
+  // Close flow revalidates the actor at confirmation time.
   await send(app, { ...commandPayload('ticket'), type: 3, data: { id: '11', custom_id: `cc_ticket:close:${ticketRow.id}` } });
-  const confirm = await send(app, { ...commandPayload('ticket'), type: 3, data: { id: '12', custom_id: `cc_ticket:confirm:${ticketRow.id}` } });
+  const unauthorized = await send(app, {
+    ...commandPayload('ticket'), member: { user: { id: '777888999000111222' }, permissions: '0', roles: [] },
+    type: 3, data: { id: '12', custom_id: `cc_ticket:confirm:${ticketRow.id}` },
+  });
+  assert.ok(JSON.stringify(unauthorized.json.data.components).includes('Only the ticket owner or support can close this'));
+  assert.equal(mocks.tables.bot_tickets.get(ticketRow.id).status, 'claimed', 'unauthorized confirmation must not change ticket state');
+  const confirm = await send(app, { ...commandPayload('ticket'), type: 3, data: { id: '13', custom_id: `cc_ticket:confirm:${ticketRow.id}` } });
   assert.ok(JSON.stringify(confirm.json.data.components).includes('closed'));
   assert.ok(mocks.discord.permissions.some((p) => p.target === ticketRow.user_id && p.deny === '2048'));
   assert.equal(mocks.tables.bot_tickets.get(ticketRow.id).status, 'closed');

@@ -377,8 +377,14 @@ export function createHandlers(env, api, store) {
       const ticketId = customId.split(':')[2];
       const ticket = await store.getTicket(ticketId);
       if (!ticket) return reply([container(COLORS.DANGER, textDisplay('That ticket no longer exists.'))], EPHEMERAL_V2);
-      await store.updateTicket(ticketId, { status: 'closed', claimed_by: ticket.claimed_by });
+      const config = await getConfig(guildId);
+      const allowed = interaction.member.user.id === ticket.user_id
+        || interaction.member.roles?.includes(config.support_role_id)
+        || hasPermission(interaction.member?.permissions, 'MANAGE_MESSAGES');
+      if (!allowed) return reply([container(COLORS.DANGER, textDisplay('Only the ticket owner or support can close this.'))], EPHEMERAL_V2);
+      // Apply Discord's send restriction first. If it fails, keep the database ticket open.
       await api('PUT', `/channels/${ticket.channel_id}/permissions/${ticket.user_id}`, { type: 1, allow: '0', deny: `${1 << 11}` });
+      await store.updateTicket(ticketId, { status: 'closed', claimed_by: ticket.claimed_by });
       await api('POST', `/channels/${ticket.channel_id}/messages`, {
         flags: 32768,
         components: [container(COLORS.ACCENT, textDisplay(`**Ticket closed** by <@${interaction.member.user.id}>. Staff can still read everything here.`))],

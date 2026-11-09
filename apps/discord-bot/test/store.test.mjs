@@ -46,3 +46,18 @@ test('a redirect response fails without sending credentials to its target', asyn
   await assert.rejects(store.getConfig('1'), TypeError);
   assert.equal(targetRequests, 0);
 });
+
+
+test('ticket updates and config/draft writes reject failed HTTP responses', async () => {
+  const store = createStore({ SUPABASE_URL: 'https://example.test', SUPABASE_SERVICE_KEY: 'test-key' }, async (url, init) => {
+    const path = new URL(String(url)).pathname;
+    if (path.endsWith('/bot_tickets')) return new Response('{\"error\":\"write failed\"}', { status: 500 });
+    if (path.endsWith('/bot_guilds')) return new Response('{\"error\":\"config failed\"}', { status: 503 });
+    if (path.endsWith('/bot_pending')) return new Response('{\"error\":\"draft failed\"}', { status: 502 });
+    return new Response('[]', { status: 200 });
+  });
+  await assert.rejects(store.updateTicket('ticket-1', { status: 'closed' }), /Ticket update failed: HTTP 500/);
+  await assert.rejects(store.saveConfig('guild-1', { enabled: true }), /Config save failed: HTTP 503/);
+  await assert.rejects(store.savePending('draft-1', { title: 'hello' }), /Draft save failed: HTTP 502/);
+  await assert.rejects(store.deletePending('draft-1'), /Draft delete failed: HTTP 502/);
+});

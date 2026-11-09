@@ -18,7 +18,7 @@ Open http://localhost:3000 for the public product homepage. The command workspac
 ## Discord configuration
 
 1. Create an application at https://discord.com/developers/applications.
-2. Under OAuth2, register **exactly** `http://localhost:3000/auth/callback` (or `${APP_ORIGIN}/auth/callback` for your deployment). Set `DISCORD_CLIENT_ID` and `DISCORD_CLIENT_SECRET` in `.env`.
+2. Under OAuth2, register **exactly** `http://localhost:3000/auth/callback` (or `${APP_ORIGIN}/auth/callback` for your deployment). Set `DISCORD_CLIENT_ID` to your application ID and `DISCORD_CLIENT_SECRET` in `.env`. Also set `DISCORD_APPLICATION_ID` to that same application ID; the bot worker validates that both IDs match before starting.
 3. A shared operator bot is optional. If you want to provide one, create/reset its token under Bot and set `DISCORD_BOT_TOKEN`. Customers can connect their own bots through the signed-in app without a shared bot token. Never put tokens in browser code, URLs, GitHub issues, or any `VITE_` variable.
 4. Generate `SESSION_SECRET` with `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`. Keep it stable across restarts. Changing or losing it makes stored encrypted sessions and customer bot credentials unreadable.
 5. Restart, sign in, and select a server where you have **Manage Server** or Administrator permission. Use the bot installation link in the UI. The bot requests **Manage Channels** and **Manage Roles**, not Administrator. Put its role above roles it will create. No privileged Gateway intents are required; this MVP uses REST only.

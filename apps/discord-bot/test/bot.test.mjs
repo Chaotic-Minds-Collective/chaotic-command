@@ -24,7 +24,7 @@ function makeEnv() {
 }
 
 function makeMocks() {
-  const discord = { channels: new Map(), messages: [], bans: [], timeouts: [], permissions: [], commands: null, dms: [] };
+  const discord = { channels: new Map(), messages: [], bans: [], timeouts: [], permissions: [], commands: null, dms: [], failBotRoleFetch: false, botRole: 'bot-role', failTicketUpdate: false };
   const tables = { bot_guilds: new Map(), bot_tickets: new Map(), bot_pending: new Map() };
   const calls = [];
 
@@ -48,6 +48,7 @@ function makeMocks() {
         return new Response(JSON.stringify(rows), { status: 200 });
       }
       if (method === 'PATCH') {
+        if (table === 'bot_tickets' && discord.failTicketUpdate) return new Response('{}', { status: 500 });
         const row = tables[table].get(idEq);
         if (row) tables[table].set(idEq, { ...row, ...body });
         return new Response(JSON.stringify(row ?? null), { status: 200 });
@@ -62,7 +63,15 @@ function makeMocks() {
       const p = url.pathname.replace('/api/v10', '');
       let match;
       if ((match = p.match(/^\/guilds\/(\d+)$/)) && method === 'GET') {
-        return Response.json({ id: match[1], name: 'Test Server' });
+        return Response.json({ id: match[1], name: 'Test Server', owner_id: '888000111222333444' });
+      }
+      if ((match = p.match(/^\/guilds\/(\d+)\/roles$/)) && method === 'GET') {
+        return Response.json([{ id: 'actor-role', position: 10 }, { id: 'target-role', position: 5 }, { id: 'elevated-role', position: 15 }, { id: 'bot-role', position: 20 }]);
+      }
+      if ((match = p.match(/^\/guilds\/(\d+)\/members\/(\d+)$/)) && method === 'GET') {
+        if (match[2] === '999888777666555444' && discord.failBotRoleFetch) return new Response('failed', { status: 500 });
+        const role = match[2] === '999888777666555444' ? discord.botRole : (match[2] === '999000111222333445' ? 'elevated-role' : 'target-role');
+        return Response.json({ user: { id: match[2] }, roles: [role] });
       }
       if ((match = p.match(/^\/guilds\/(\d+)\/channels$/)) && method === 'POST') {
         const channel = { id: `ch-${discord.channels.size + 1}`, ...body };
@@ -124,7 +133,7 @@ function makeMocks() {
   return { fetcher, calls, discord, tables };
 }
 
-const MEMBER = { user: { id: '111222333444555666', username: 'psy' }, permissions: '1099511636006' };
+const MEMBER = { user: { id: '111222333444555666', username: 'psy' }, permissions: '1099511636006', roles: ['actor-role'] };
 const ADMIN = { user: { id: '111222333444555666' }, permissions: `${1n << 5n}` }; // MANAGE_GUILD only
 const MEMBER_NO_PERMS = { user: { id: '111222333444555666' }, permissions: '0' };
 
@@ -268,11 +277,24 @@ test('ticket panel, open modal, creation with overwrites, claim, close', async (
   const claimed = await send(app, { ...commandPayload('ticket'), type: 3, data: { id: '10', custom_id: `cc_ticket:claim:${ticketRow.id}` } });
   assert.ok(JSON.stringify(claimed.json.data.components).includes('claimed'));
 
-  // Close flow: confirm, then deny SEND_MESSAGES for the owner
+  // Close flow revalidates the actor at confirmation time.
   await send(app, { ...commandPayload('ticket'), type: 3, data: { id: '11', custom_id: `cc_ticket:close:${ticketRow.id}` } });
-  const confirm = await send(app, { ...commandPayload('ticket'), type: 3, data: { id: '12', custom_id: `cc_ticket:confirm:${ticketRow.id}` } });
+  const unauthorized = await send(app, {
+    ...commandPayload('ticket'), member: { user: { id: '777888999000111222' }, permissions: '0', roles: [] },
+    type: 3, data: { id: '12', custom_id: `cc_ticket:confirm:${ticketRow.id}` },
+  });
+  assert.ok(JSON.stringify(unauthorized.json.data.components).includes('Only the ticket owner or support can close this'));
+  assert.equal(mocks.tables.bot_tickets.get(ticketRow.id).status, 'claimed', 'unauthorized confirmation must not change ticket state');
+  mocks.discord.failTicketUpdate = true;
+  const failedClose = await send(app, { ...commandPayload('ticket'), type: 3, data: { id: '13', custom_id: `cc_ticket:confirm:${ticketRow.id}` } });
+  assert.ok(JSON.stringify(failedClose.json.data.components).includes('Please retry the Close ticket confirmation'));
+  assert.equal(mocks.tables.bot_tickets.get(ticketRow.id).status, 'claimed', 'failed persistence must not report ticket closed');
+  assert.ok(mocks.discord.permissions.some((p) => p.target === ticketRow.user_id && p.deny === '2048'), 'Discord restriction may already have applied');
+  const permissionPutsBeforeRetry = mocks.discord.permissions.length;
+  mocks.discord.failTicketUpdate = false;
+  const confirm = await send(app, { ...commandPayload('ticket'), type: 3, data: { id: '14', custom_id: `cc_ticket:confirm:${ticketRow.id}` } });
   assert.ok(JSON.stringify(confirm.json.data.components).includes('closed'));
-  assert.ok(mocks.discord.permissions.some((p) => p.target === ticketRow.user_id && p.deny === '2048'));
+  assert.equal(mocks.discord.permissions.length, permissionPutsBeforeRetry + 1, 'retry repeats the idempotent permission PUT');
   assert.equal(mocks.tables.bot_tickets.get(ticketRow.id).status, 'closed');
   void env;
 });
@@ -355,6 +377,46 @@ test('moderation: permissions enforced, actions logged', async () => {
   assert.equal(denied.status, 200);
   assert.ok(JSON.stringify(denied.json.data.components).includes('BAN_MEMBERS'));
   assert.equal(mocks.discord.bans.length, 0);
+
+  const hierarchyDenied = await send(app, commandPayload('mod', [{ name: 'ban', options: [{ name: 'user', value: '999000111222333445' }] }]));
+  assert.ok(JSON.stringify(hierarchyDenied.json.data.components).includes('lower than your highest role'));
+  assert.equal(mocks.discord.bans.length, 0, 'higher-ranked target must not be banned');
+  const kickDenied = await send(app, commandPayload('mod', [{ name: 'kick', options: [{ name: 'user', value: '999000111222333445' }] }]));
+  assert.ok(JSON.stringify(kickDenied.json.data.components).includes('lower than your highest role'));
+  assert.equal(mocks.discord.kicks?.length ?? 0, 0, 'higher-ranked target must not be kicked');
+
+  const timeoutDenied = await send(app, commandPayload('mod', [{ name: 'timeout', options: [{ name: 'user', value: '999000111222333445' }, { name: 'minutes', value: 30 }] }]));
+  assert.ok(JSON.stringify(timeoutDenied.json.data.components).includes('lower than your highest role'));
+  assert.equal(mocks.discord.timeouts.length, 0, 'higher-ranked target must not be timed out');
+
+  for (const action of ['ban', 'kick', 'timeout']) {
+    const options = action === 'timeout' ? [{ name: 'user', value: '888000111222333444' }, { name: 'minutes', value: 30 }] : [{ name: 'user', value: '888000111222333444' }];
+    const ownerTarget = await send(app, commandPayload('mod', [{ name: action, options }]));
+    assert.ok(JSON.stringify(ownerTarget.json.data.components).includes('server owner cannot be moderated'));
+  }
+  assert.equal(mocks.discord.bans.length, 0, 'owner target must not be banned');
+  assert.equal(mocks.discord.kicks?.length ?? 0, 0, 'owner target must not be kicked');
+  assert.equal(mocks.discord.timeouts.length, 0, 'owner target must not be timed out');
+
+  for (const action of ['ban', 'kick', 'timeout']) {
+    const options = action === 'timeout' ? [{ name: 'user', value: MEMBER.user.id }, { name: 'minutes', value: 30 }] : [{ name: 'user', value: MEMBER.user.id }];
+    const self = await send(app, commandPayload('mod', [{ name: action, options }]));
+    assert.ok(JSON.stringify(self.json.data.components).includes('cannot moderate yourself'));
+  }
+
+  // A server owner actor bypasses actor hierarchy, but the bot itself must outrank the target.
+  mocks.discord.botRole = 'actor-role';
+  const ownerActor = { ...MEMBER, user: { id: '888000111222333444' }, roles: [] };
+  const botBelowTarget = await send(app, commandPayload('mod', [{ name: 'kick', options: [{ name: 'user', value: '999000111222333445' }] }], { member: ownerActor }));
+  assert.ok(JSON.stringify(botBelowTarget.json.data.components).includes('bot must have a higher role'));
+  assert.equal(mocks.discord.kicks?.length ?? 0, 0, 'bot hierarchy failure must not kick');
+  mocks.discord.botRole = 'bot-role';
+
+  mocks.discord.failBotRoleFetch = true;
+  const fetchDenied = await send(app, commandPayload('mod', [{ name: 'ban', options: [{ name: 'user', value: '999000111222333444' }] }]));
+  assert.ok(JSON.stringify(fetchDenied.json.data.components).includes('Unable to verify the member hierarchy'));
+  assert.equal(mocks.discord.bans.length, 0, 'failed bot role fetch must deny ban');
+  mocks.discord.failBotRoleFetch = false;
 
   await send(app, commandPayload('mod', [{ name: 'ban', options: [{ name: 'user', value: '999000111222333444' }, { name: 'reason', value: 'spamming' }, { name: 'delete_days', value: 3 }] }]));
   assert.equal(mocks.discord.bans.length, 1);

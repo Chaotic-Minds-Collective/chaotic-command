@@ -30,51 +30,59 @@ export function createStore(env, fetcher = fetch) {
     return { status: response.status, data };
   }
 
+  /** Throw on an unsuccessful HTTP response instead of silently treating it as success. */
+  const ensureSuccess = (result, operation) => {
+    if (result.status >= 400) throw new Error(`${operation} failed: HTTP ${result.status}`);
+    return result;
+  };
+
   /** Read a guild's stored config, or null when none exists. */
   const getConfig = async (guildId) => {
-    const { data } = await request('GET', `/rest/v1/bot_guilds?guild_id=eq.${guildId}&select=config&limit=1`);
-    return data?.[0]?.config ?? null;
+    const result = ensureSuccess(await request('GET', `/rest/v1/bot_guilds?guild_id=eq.${guildId}&select=config&limit=1`), 'Config read');
+    return result.data?.[0]?.config ?? null;
   };
 
   /** Upsert a guild's config row. */
-  const saveConfig = (guildId, config) =>
-    request('POST', '/rest/v1/bot_guilds', { guild_id: guildId, config }, { Prefer: 'resolution=merge-duplicates' });
+  const saveConfig = async (guildId, config) =>
+    ensureSuccess(await request('POST', '/rest/v1/bot_guilds', { guild_id: guildId, config }, { Prefer: 'resolution=merge-duplicates' }), 'Config save');
 
   /** Insert a new ticket row. */
   const createTicket = async (row) => {
-    const result = await request('POST', '/rest/v1/bot_tickets', row);
-    if (result.status >= 400) throw new Error(`Ticket insert failed: HTTP ${result.status}`);
-    return result;
+    return ensureSuccess(await request('POST', '/rest/v1/bot_tickets', row), 'Ticket insert');
   };
 
   /** Remove a ticket row when creation cannot finish. */
   const deleteTicket = async (ticketId) => {
-    const result = await request('DELETE', `/rest/v1/bot_tickets?id=eq.${ticketId}`);
-    if (result.status >= 400) throw new Error(`Ticket cleanup failed: HTTP ${result.status}`);
-    return result;
+    return ensureSuccess(await request('DELETE', `/rest/v1/bot_tickets?id=eq.${ticketId}`), 'Ticket cleanup');
   };
 
   /** Read one ticket by id, or null when missing. */
   const getTicket = async (ticketId) => {
-    const { data } = await request('GET', `/rest/v1/bot_tickets?id=eq.${ticketId}&select=*&limit=1`);
-    return data?.[0] ?? null;
+    const result = ensureSuccess(await request('GET', `/rest/v1/bot_tickets?id=eq.${ticketId}&select=*&limit=1`), 'Ticket read');
+    return result.data?.[0] ?? null;
   };
 
   /** Patch a ticket row's mutable fields. */
-  const updateTicket = (ticketId, patch) => request('PATCH', `/rest/v1/bot_tickets?id=eq.${ticketId}`, patch);
+  const updateTicket = async (ticketId, patch) =>
+    ensureSuccess(await request('PATCH', `/rest/v1/bot_tickets?id=eq.${ticketId}`, patch), 'Ticket update');
 
   /** Count a guild's tickets, used for sequential channel numbering. */
   const countTickets = async (guildId) => {
-    const { data } = await request('GET', `/rest/v1/bot_tickets?guild_id=eq.${guildId}&select=id`);
-    return data?.length ?? 0;
+    const result = ensureSuccess(await request('GET', `/rest/v1/bot_tickets?guild_id=eq.${guildId}&select=id`), 'Ticket count');
+    return result.data?.length ?? 0;
   };
 
   /** Store a pending announcement draft keyed by a random id. */
-  const savePending = (id, payload) => request('POST', '/rest/v1/bot_pending', { id, payload });
+  const savePending = async (id, payload) =>
+    ensureSuccess(await request('POST', '/rest/v1/bot_pending', { id, payload }), 'Draft save');
   /** Read a pending draft's payload, or null when expired or missing. */
-  const getPending = async (id) => (await request('GET', `/rest/v1/bot_pending?id=eq.${id}&select=payload&limit=1`)).data?.[0]?.payload ?? null;
+  const getPending = async (id) => {
+    const result = ensureSuccess(await request('GET', `/rest/v1/bot_pending?id=eq.${id}&select=payload&limit=1`), 'Draft read');
+    return result.data?.[0]?.payload ?? null;
+  };
   /** Delete a pending draft after posting or discarding it. */
-  const deletePending = (id) => request('DELETE', `/rest/v1/bot_pending?id=eq.${id}`);
+  const deletePending = async (id) =>
+    ensureSuccess(await request('DELETE', `/rest/v1/bot_pending?id=eq.${id}`), 'Draft delete');
 
   return { getConfig, saveConfig, createTicket, deleteTicket, getTicket, updateTicket, countTickets, savePending, getPending, deletePending };
 }

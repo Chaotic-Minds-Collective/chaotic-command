@@ -54,6 +54,46 @@ export function createHandlers(env, api, store) {
   /** Resolve a guild's name for message templates, with a fallback. */
   const guildName = async (guildId) => (await api('GET', `/guilds/${guildId}`))?.name ?? 'your server';
 
+  /** Fail closed unless the actor outranks the target in the guild role hierarchy. */
+  const moderationHierarchyBlock = async (interaction, targetId) => {
+    const guildId = interaction.guild_id;
+    const actorId = interaction.member?.user?.id;
+    if (!actorId || !targetId) return 'Unable to verify the member hierarchy. Moderation was canceled.';
+    if (actorId === targetId) return 'You cannot moderate yourself.';
+
+    try {
+      const [guild, roles, target, botMember] = await Promise.all([
+        api('GET', '/guilds/' + guildId),
+        api('GET', '/guilds/' + guildId + '/roles'),
+        api('GET', '/guilds/' + guildId + '/members/' + targetId),
+        api('GET', '/guilds/' + guildId + '/members/' + env.DISCORD_APPLICATION_ID),
+      ]);
+      if (targetId === guild.owner_id) return 'The server owner cannot be moderated.';
+      const actorIsOwner = actorId === guild.owner_id;
+      if (!Array.isArray(roles) || !Array.isArray(target?.roles) || !Array.isArray(interaction.member.roles) || !Array.isArray(botMember?.roles)) {
+        return 'Unable to verify the member hierarchy. Moderation was canceled.';
+      }
+
+      const positions = new Map(roles.map((role) => [role.id, Number(role.position) || 0]));
+      positions.set(guildId, 0); // @everyone
+      const highestPosition = (roleIds) => Math.max(0, ...roleIds.map((id) => positions.get(id) ?? 0));
+      const actorPosition = highestPosition(interaction.member.roles);
+      const targetPosition = highestPosition(target.roles);
+      const botPosition = highestPosition(botMember.roles);
+      if (targetPosition >= botPosition) return 'The bot must have a higher role than the target to perform this action.';
+      if (!actorIsOwner && targetPosition >= actorPosition) return 'You can only moderate members with roles lower than your highest role.';
+      return null;
+    } catch {
+      return 'Unable to verify the member hierarchy. Moderation was canceled.';
+    }
+  };
+
+  /** Shared ticket-close rule for the initial and confirmation interactions. */
+  const canCloseTicket = (interaction, ticket, config) =>
+    interaction.member.user.id === ticket.user_id
+    || interaction.member.roles?.includes(config.support_role_id)
+    || hasPermission(interaction.member?.permissions, 'MANAGE_MESSAGES');
+
   /** Post a moderation action summary to the configured mod-log channel. */
   const logMod = async (guildId, config, actorMention, line) => {
     if (!config.mod_log_channel_id) return;
@@ -204,6 +244,8 @@ export function createHandlers(env, api, store) {
       if (sub === 'ban') {
         const blocked = requireGuild(interaction) ?? requirePermissions(interaction, 'BAN_MEMBERS');
         if (blocked) return blocked;
+        const hierarchyBlock = await moderationHierarchyBlock(interaction, targetId);
+        if (hierarchyBlock) return reply([container(COLORS.DANGER, textDisplay(hierarchyBlock))], EPHEMERAL_V2);
         const days = Number(subOptions.get('delete_days') ?? 0);
         await api('PUT', `/guilds/${guildId}/bans/${targetId}`, { delete_message_seconds: Math.min(days * 86400, 604800) });
         await logMod(guildId, config, actor, `**Banned** <@${targetId}> - ${reason}${days ? ` (purged ${days}d of messages)` : ''}`);
@@ -212,6 +254,8 @@ export function createHandlers(env, api, store) {
       if (sub === 'kick') {
         const blocked = requireGuild(interaction) ?? requirePermissions(interaction, 'KICK_MEMBERS');
         if (blocked) return blocked;
+        const hierarchyBlock = await moderationHierarchyBlock(interaction, targetId);
+        if (hierarchyBlock) return reply([container(COLORS.DANGER, textDisplay(hierarchyBlock))], EPHEMERAL_V2);
         await api('DELETE', `/guilds/${guildId}/members/${targetId}`);
         await logMod(guildId, config, actor, `**Kicked** <@${targetId}> - ${reason}`);
         return reply([container(COLORS.SUCCESS, textDisplay(`**Kicked** <@${targetId}> - ${reason}`))], EPHEMERAL_V2);
@@ -219,6 +263,8 @@ export function createHandlers(env, api, store) {
       if (sub === 'timeout') {
         const blocked = requireGuild(interaction) ?? requirePermissions(interaction, 'MODERATE_MEMBERS');
         if (blocked) return blocked;
+        const hierarchyBlock = await moderationHierarchyBlock(interaction, targetId);
+        if (hierarchyBlock) return reply([container(COLORS.DANGER, textDisplay(hierarchyBlock))], EPHEMERAL_V2);
         const minutes = Number(subOptions.get('minutes'));
         const until = new Date(Date.now() + minutes * 60000).toISOString();
         await api('PATCH', `/guilds/${guildId}/members/${targetId}`, { communication_disabled_until: until });
@@ -354,9 +400,8 @@ export function createHandlers(env, api, store) {
       const ticketId = customId.split(':')[2];
       const ticket = await store.getTicket(ticketId);
       if (!ticket) return reply([container(COLORS.DANGER, textDisplay('That ticket no longer exists.'))], EPHEMERAL_V2);
-      const allowed = interaction.member.user.id === ticket.user_id
-        || interaction.member.roles?.includes((await getConfig(guildId)).support_role_id)
-        || hasPermission(interaction.member?.permissions, 'MANAGE_MESSAGES');
+      const config = await getConfig(guildId);
+      const allowed = canCloseTicket(interaction, ticket, config);
       if (!allowed) return reply([container(COLORS.DANGER, textDisplay('Only the ticket owner or support can close this.'))], EPHEMERAL_V2);
       return reply(
         [
@@ -377,8 +422,19 @@ export function createHandlers(env, api, store) {
       const ticketId = customId.split(':')[2];
       const ticket = await store.getTicket(ticketId);
       if (!ticket) return reply([container(COLORS.DANGER, textDisplay('That ticket no longer exists.'))], EPHEMERAL_V2);
-      await store.updateTicket(ticketId, { status: 'closed', claimed_by: ticket.claimed_by });
+      const config = await getConfig(guildId);
+      const allowed = canCloseTicket(interaction, ticket, config);
+      if (!allowed) return reply([container(COLORS.DANGER, textDisplay('Only the ticket owner or support can close this.'))], EPHEMERAL_V2);
+      // Discord's permission PUT is idempotent: allow retry if persistence fails after it succeeds.
       await api('PUT', `/channels/${ticket.channel_id}/permissions/${ticket.user_id}`, { type: 1, allow: '0', deny: `${1 << 11}` });
+      try {
+        await store.updateTicket(ticketId, { status: 'closed', claimed_by: ticket.claimed_by });
+      } catch {
+        return updateMessage(
+          [container(COLORS.WARN, textDisplay('Discord permissions were updated, but the ticket could not be marked closed. Please retry the Close ticket confirmation.'))],
+          EPHEMERAL_V2,
+        );
+      }
       await api('POST', `/channels/${ticket.channel_id}/messages`, {
         flags: 32768,
         components: [container(COLORS.ACCENT, textDisplay(`**Ticket closed** by <@${interaction.member.user.id}>. Staff can still read everything here.`))],

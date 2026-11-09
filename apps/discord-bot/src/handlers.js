@@ -62,14 +62,15 @@ export function createHandlers(env, api, store) {
     if (actorId === targetId) return 'You cannot moderate yourself.';
 
     try {
-      const [guild, roles, target] = await Promise.all([
+      const [guild, roles, target, botMember] = await Promise.all([
         api('GET', '/guilds/' + guildId),
         api('GET', '/guilds/' + guildId + '/roles'),
         api('GET', '/guilds/' + guildId + '/members/' + targetId),
+        api('GET', '/guilds/' + guildId + '/members/' + env.DISCORD_APPLICATION_ID),
       ]);
       if (targetId === guild.owner_id) return 'The server owner cannot be moderated.';
-      if (actorId === guild.owner_id) return null;
-      if (!Array.isArray(roles) || !Array.isArray(target?.roles) || !Array.isArray(interaction.member.roles)) {
+      const actorIsOwner = actorId === guild.owner_id;
+      if (!Array.isArray(roles) || !Array.isArray(target?.roles) || !Array.isArray(interaction.member.roles) || !Array.isArray(botMember?.roles)) {
         return 'Unable to verify the member hierarchy. Moderation was canceled.';
       }
 
@@ -78,12 +79,20 @@ export function createHandlers(env, api, store) {
       const highestPosition = (roleIds) => Math.max(0, ...roleIds.map((id) => positions.get(id) ?? 0));
       const actorPosition = highestPosition(interaction.member.roles);
       const targetPosition = highestPosition(target.roles);
-      if (targetPosition >= actorPosition) return 'You can only moderate members with roles lower than your highest role.';
+      const botPosition = highestPosition(botMember.roles);
+      if (targetPosition >= botPosition) return 'The bot must have a higher role than the target to perform this action.';
+      if (!actorIsOwner && targetPosition >= actorPosition) return 'You can only moderate members with roles lower than your highest role.';
       return null;
     } catch {
       return 'Unable to verify the member hierarchy. Moderation was canceled.';
     }
   };
+
+  /** Shared ticket-close rule for the initial and confirmation interactions. */
+  const canCloseTicket = (interaction, ticket, config) =>
+    interaction.member.user.id === ticket.user_id
+    || interaction.member.roles?.includes(config.support_role_id)
+    || hasPermission(interaction.member?.permissions, 'MANAGE_MESSAGES');
 
   /** Post a moderation action summary to the configured mod-log channel. */
   const logMod = async (guildId, config, actorMention, line) => {
@@ -391,9 +400,8 @@ export function createHandlers(env, api, store) {
       const ticketId = customId.split(':')[2];
       const ticket = await store.getTicket(ticketId);
       if (!ticket) return reply([container(COLORS.DANGER, textDisplay('That ticket no longer exists.'))], EPHEMERAL_V2);
-      const allowed = interaction.member.user.id === ticket.user_id
-        || interaction.member.roles?.includes((await getConfig(guildId)).support_role_id)
-        || hasPermission(interaction.member?.permissions, 'MANAGE_MESSAGES');
+      const config = await getConfig(guildId);
+      const allowed = canCloseTicket(interaction, ticket, config);
       if (!allowed) return reply([container(COLORS.DANGER, textDisplay('Only the ticket owner or support can close this.'))], EPHEMERAL_V2);
       return reply(
         [
@@ -415,13 +423,18 @@ export function createHandlers(env, api, store) {
       const ticket = await store.getTicket(ticketId);
       if (!ticket) return reply([container(COLORS.DANGER, textDisplay('That ticket no longer exists.'))], EPHEMERAL_V2);
       const config = await getConfig(guildId);
-      const allowed = interaction.member.user.id === ticket.user_id
-        || interaction.member.roles?.includes(config.support_role_id)
-        || hasPermission(interaction.member?.permissions, 'MANAGE_MESSAGES');
+      const allowed = canCloseTicket(interaction, ticket, config);
       if (!allowed) return reply([container(COLORS.DANGER, textDisplay('Only the ticket owner or support can close this.'))], EPHEMERAL_V2);
-      // Apply Discord's send restriction first. If it fails, keep the database ticket open.
+      // Discord's permission PUT is idempotent: allow retry if persistence fails after it succeeds.
       await api('PUT', `/channels/${ticket.channel_id}/permissions/${ticket.user_id}`, { type: 1, allow: '0', deny: `${1 << 11}` });
-      await store.updateTicket(ticketId, { status: 'closed', claimed_by: ticket.claimed_by });
+      try {
+        await store.updateTicket(ticketId, { status: 'closed', claimed_by: ticket.claimed_by });
+      } catch {
+        return updateMessage(
+          [container(COLORS.WARN, textDisplay('Discord permissions were updated, but the ticket could not be marked closed. Please retry the Close ticket confirmation.'))],
+          EPHEMERAL_V2,
+        );
+      }
       await api('POST', `/channels/${ticket.channel_id}/messages`, {
         flags: 32768,
         components: [container(COLORS.ACCENT, textDisplay(`**Ticket closed** by <@${interaction.member.user.id}>. Staff can still read everything here.`))],

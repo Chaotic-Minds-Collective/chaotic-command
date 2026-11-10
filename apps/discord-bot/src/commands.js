@@ -23,7 +23,7 @@ export const COMMANDS = [
         options: [{ name: 'text', description: 'Welcome text, up to 1500 characters', type: 3, required: true, max_length: 1500 }],
       },
       { name: 'test', description: 'Preview the welcome card in its channel', type: 1 },
-      { name: 'on', description: 'Enable welcome messages', type: 1 },
+      { name: 'on', description: 'Automatic join messages are not available yet', type: 1 },
       { name: 'off', description: 'Disable welcome messages', type: 1 },
     ],
   },
@@ -57,7 +57,7 @@ export const COMMANDS = [
   {
     name: 'mod',
     description: 'Moderation tools',
-    default_member_permissions: '1099511635974', // BAN | KICK | MODERATE_MEMBERS | MANAGE_MESSAGES
+    default_member_permissions: '1099511635990', // BAN | KICK | MANAGE_CHANNELS | MODERATE_MEMBERS | MANAGE_MESSAGES
     ...GUILD_ONLY,
     options: [
       {

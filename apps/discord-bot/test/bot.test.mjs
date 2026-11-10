@@ -7,6 +7,14 @@ import { createApp } from '../src/index.js';
 import { COMMANDS } from '../src/commands.js';
 import { hexToBytes, FLAG_COMPONENTS_V2, FLAG_EPHEMERAL } from '../src/lib.js';
 
+test('mod command defaults include every permission used by its subcommands', () => {
+  const mod = COMMANDS.find((command) => command.name === 'mod');
+  const permissions = BigInt(mod.default_member_permissions);
+  for (const flag of [1n << 1n, 1n << 2n, 1n << 4n, 1n << 13n, 1n << 40n]) {
+    assert.notEqual(permissions & flag, 0n, `missing permission flag ${flag}`);
+  }
+});
+
 const keys = await crypto.subtle.generateKey({ name: 'Ed25519' }, true, ['sign', 'verify']);
 const publicKeyHex = [...new Uint8Array(await crypto.subtle.exportKey('raw', keys.publicKey))]
   .map((b) => b.toString(16).padStart(2, '0'))
@@ -202,7 +210,7 @@ test('setup selects persist config and re-render the panel', async () => {
   assert.equal(saved.config.welcome.channel_id, '300000000000000001');
 });
 
-test('welcome message modal + save + test + enable', async () => {
+test('welcome message modal + save + test + unavailable enable gate', async () => {
   const mocks = makeMocks();
   const app = createApp(makeEnv(), mocks.fetcher);
 
@@ -219,9 +227,10 @@ test('welcome message modal + save + test + enable', async () => {
   assert.ok(JSON.stringify(posted.components).includes('Welcome to Test Server'));
   assert.ok(JSON.stringify(posted.components).includes('Hey <@111222333444555666>'));
 
-  await send(app, commandPayload('welcome', [{ name: 'on' }]));
+  const enable = await send(app, commandPayload('welcome', [{ name: 'on' }]));
+  assert.ok(JSON.stringify(enable.json.data.components).includes('not available yet'));
   config = mocks.tables.bot_guilds.get('100000000000000001').config;
-  assert.equal(config.welcome.enabled, true);
+  assert.equal(config.welcome.enabled, false, 'the unsupported automatic-join setting must not be enabled');
 });
 
 test('legacy Action Row modal submission saves welcome configuration', async () => {

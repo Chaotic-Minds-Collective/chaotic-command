@@ -182,9 +182,12 @@ export function createHandlers(env, api, store) {
         await api('POST', `/channels/${config.welcome.channel_id}/messages`, { flags: 32768, components: [card] });
         return reply([container(COLORS.SUCCESS, textDisplay(`Preview posted in <#${config.welcome.channel_id}>.`))], EPHEMERAL_V2);
       }
-      if (sub === 'on' || sub === 'off') {
-        await withConfig(guildId, (c) => { c.welcome.enabled = sub === 'on'; });
-        return reply([container(COLORS.SUCCESS, textDisplay(`Welcome messages **${sub === 'on' ? 'enabled' : 'disabled'}**.`))], EPHEMERAL_V2);
+      if (sub === 'on') {
+        return reply([container(COLORS.WARN, textDisplay('Automatic welcome messages are not available yet. You can configure the welcome card and use `/welcome test` to preview it.'))], EPHEMERAL_V2);
+      }
+      if (sub === 'off') {
+        await withConfig(guildId, (c) => { c.welcome.enabled = false; });
+        return reply([container(COLORS.SUCCESS, textDisplay('Welcome messages disabled.'))], EPHEMERAL_V2);
       }
       return reply([container(COLORS.WARN, textDisplay('Unknown subcommand.'))], EPHEMERAL_V2);
     }

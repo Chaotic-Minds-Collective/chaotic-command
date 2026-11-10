@@ -46,6 +46,8 @@ export async function verifySignature(request, rawBody, publicKeyHex) {
   const signature = request.headers.get('X-Signature-Ed25519') ?? '';
   const timestamp = request.headers.get('X-Signature-Timestamp') ?? '';
   if (!signature || !timestamp || !publicKeyHex) return false;
+  const timestampMs = Number(timestamp) * 1000;
+  if (!Number.isFinite(timestampMs) || Math.abs(Date.now() - timestampMs) > 5 * 60 * 1000) return false;
   try {
     const payload = new TextEncoder().encode(timestamp + rawBody);
     const key = await crypto.subtle.importKey('raw', hexToBytes(publicKeyHex), { name: 'Ed25519' }, false, ['verify']);

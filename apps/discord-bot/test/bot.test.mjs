@@ -145,11 +145,11 @@ const MEMBER = { user: { id: '111222333444555666', username: 'psy' }, permission
 const ADMIN = { user: { id: '111222333444555666' }, permissions: `${1n << 5n}` }; // MANAGE_GUILD only
 const MEMBER_NO_PERMS = { user: { id: '111222333444555666' }, permissions: '0' };
 
-async function send(app, payload, { sign = true, secret, path = '/' } = {}) {
+async function send(app, payload, { sign = true, secret, path = '/', timestamp = String(Math.floor(Date.now() / 1000)) } = {}) {
   const raw = JSON.stringify(payload);
-  const headers = { 'Content-Type': 'application/json', 'X-Signature-Timestamp': '1700000000' };
+  const headers = { 'Content-Type': 'application/json', 'X-Signature-Timestamp': timestamp };
   if (sign) {
-    const signature = await crypto.subtle.sign('Ed25519', keys.privateKey, new TextEncoder().encode(`1700000000${raw}`));
+    const signature = await crypto.subtle.sign('Ed25519', keys.privateKey, new TextEncoder().encode(`${timestamp}${raw}`));
     headers['X-Signature-Ed25519'] = [...new Uint8Array(signature)].map((b) => b.toString(16).padStart(2, '0')).join('');
   }
   if (secret) headers['X-Register-Secret'] = secret;
@@ -179,6 +179,8 @@ test('status endpoint and signature enforcement', async () => {
 
   const bad = await send(app, { type: 1 }, { sign: false });
   assert.equal(bad.status, 401);
+  const stale = await send(app, { type: 1 }, { timestamp: '1700000000' });
+  assert.equal(stale.status, 401, 'valid signatures outside the five-minute window must be rejected');
 });
 
 test('PING answers pong; webhook PING answers 204', async () => {

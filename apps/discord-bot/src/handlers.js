@@ -25,14 +25,14 @@ const SETUP_FIELDS = {
 
 /** Build the bot's interaction and webhook-event handlers over Discord REST and Supabase. */
 export function createHandlers(env, api, store) {
-  /** Load a guild's config, filling unset fields from DEFAULT_CONFIG. */
+  /** Load defaults and normalize unsupported automatic welcomes, preserving card settings. */
   async function getConfig(guildId) {
     const stored = await store.getConfig(guildId);
     const base = DEFAULT_CONFIG();
     return {
       ...base,
       ...(stored ?? {}),
-      welcome: { ...base.welcome, ...(stored?.welcome ?? {}) },
+      welcome: { ...base.welcome, ...(stored?.welcome ?? {}), enabled: false },
     };
   }
 

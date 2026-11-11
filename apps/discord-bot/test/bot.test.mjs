@@ -7,12 +7,9 @@ import { createApp } from '../src/index.js';
 import { COMMANDS } from '../src/commands.js';
 import { hexToBytes, FLAG_COMPONENTS_V2, FLAG_EPHEMERAL } from '../src/lib.js';
 
-test('mod command defaults include every permission used by its subcommands', () => {
+test('mod command is discoverable without a combined moderation permission mask', () => {
   const mod = COMMANDS.find((command) => command.name === 'mod');
-  const permissions = BigInt(mod.default_member_permissions);
-  for (const flag of [1n << 1n, 1n << 2n, 1n << 4n, 1n << 13n, 1n << 40n]) {
-    assert.notEqual(permissions & flag, 0n, `missing permission flag ${flag}`);
-  }
+  assert.equal(mod.default_member_permissions, null);
 });
 
 const keys = await crypto.subtle.generateKey({ name: 'Ed25519' }, true, ['sign', 'verify']);
@@ -145,6 +142,7 @@ const MEMBER = { user: { id: '111222333444555666', username: 'psy' }, permission
 const ADMIN = { user: { id: '111222333444555666' }, permissions: `${1n << 5n}` }; // MANAGE_GUILD only
 const MEMBER_NO_PERMS = { user: { id: '111222333444555666' }, permissions: '0' };
 
+/** Send a synthetic interaction, signing its exact body and configurable timestamp by default. */
 async function send(app, payload, { sign = true, secret, path = '/', timestamp = String(Math.floor(Date.now() / 1000)) } = {}) {
   const raw = JSON.stringify(payload);
   const headers = { 'Content-Type': 'application/json', 'X-Signature-Timestamp': timestamp };
@@ -233,6 +231,47 @@ test('welcome message modal + save + test + unavailable enable gate', async () =
   assert.ok(JSON.stringify(enable.json.data.components).includes('not available yet'));
   config = mocks.tables.bot_guilds.get('100000000000000001').config;
   assert.equal(config.welcome.enabled, false, 'the unsupported automatic-join setting must not be enabled');
+});
+
+test('legacy enabled welcomes render OFF and preserve card configuration and previews', async () => {
+  const mocks = makeMocks();
+  const guildId = '100000000000000001';
+  const welcome = { enabled: true, channel_id: '300000000000000001', message: 'Hello {user} in {server}' };
+  mocks.tables.bot_guilds.set(guildId, { guild_id: guildId, config: { welcome } });
+  const app = createApp(makeEnv(), mocks.fetcher);
+  for (const name of ['setup', 'config']) {
+    const result = await send(app, commandPayload(name));
+    const rendered = JSON.stringify(result.json.data.components);
+    assert.ok(rendered.includes('Welcome: OFF'));
+    assert.ok(!rendered.includes('Welcome: ON'));
+  }
+  const enable = await send(app, commandPayload('welcome', [{ name: 'on' }]));
+  assert.ok(JSON.stringify(enable.json.data.components).includes('not available yet'));
+  await send(app, commandPayload('welcome', [{ name: 'test' }]));
+  const preview = mocks.discord.messages.at(-1);
+  assert.equal(preview.channel_id, welcome.channel_id);
+  assert.ok(JSON.stringify(preview.components).includes('Hello <@111222333444555666> in Test Server'));
+  await send(app, { ...commandPayload('setup'), type: 3, data: { custom_id: 'cc_setup:mod_log', values: ['400000000000000001'] } });
+  assert.deepEqual(mocks.tables.bot_guilds.get(guildId).config.welcome, { ...welcome, enabled: false });
+});
+
+test('individual moderation permissions allow their action and zero permissions deny it', async () => {
+  for (const [name, permission, options, success] of [
+    ['ban', 1n << 2n, [{ name: 'user', value: '999000111222333444' }], 'Banned'],
+    ['kick', 1n << 1n, [{ name: 'user', value: '999000111222333444' }], 'Kicked'],
+    ['timeout', 1n << 40n, [{ name: 'user', value: '999000111222333444' }, { name: 'minutes', value: 30 }], 'Timed out'],
+    ['purge', 1n << 13n, [{ name: 'count', value: 2 }], 'Purged'],
+    ['slowmode', 1n << 4n, [{ name: 'seconds', value: 10 }], 'Slowmode set'],
+  ]) {
+    const mocks = makeMocks();
+    const app = createApp(makeEnv(), mocks.fetcher);
+    const allowed = await send(app, commandPayload('mod', [{ name, options }], { member: { ...MEMBER, permissions: String(permission) } }));
+    assert.ok(JSON.stringify(allowed.json.data.components).includes(success), name);
+    const callsBefore = mocks.calls.filter((call) => call.host === 'discord.com').length;
+    const denied = await send(app, commandPayload('mod', [{ name, options }], { member: MEMBER_NO_PERMS }));
+    assert.ok(JSON.stringify(denied.json.data.components).includes('You need the'), name);
+    assert.equal(mocks.calls.filter((call) => call.host === 'discord.com').length, callsBefore, 'denied action must not call Discord');
+  }
 });
 
 test('legacy Action Row modal submission saves welcome configuration', async () => {

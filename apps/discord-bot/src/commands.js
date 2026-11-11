@@ -57,7 +57,8 @@ export const COMMANDS = [
   {
     name: 'mod',
     description: 'Moderation tools',
-    default_member_permissions: '1099511635990', // BAN | KICK | MANAGE_CHANNELS | MODERATE_MEMBERS | MANAGE_MESSAGES
+    // Discoverable by default; each action enforces its own permission in handlers.js.
+    default_member_permissions: null,
     ...GUILD_ONLY,
     options: [
       {

@@ -129,3 +129,29 @@ test('edge forwards query parameters on an allowed path', async t => {
   assert.match(response, /^HTTP\/1\.1 400 /);
   assert.match(response, /Discord sign-in was cancelled\./);
 });
+
+// Keep the request body incomplete and the client write side open: the edge must
+// close the connection after its rejection without waiting for the request timeout.
+test('edge closes rejected targets with incomplete request bodies', async t => {
+  const { port } = await startWrapper(t);
+  for (const target of ['http://example.com/api/health', '/api/../api/health', 'http://[invalid/']) {
+    for (const framing of ['Content-Length: 1000', 'Transfer-Encoding: chunked']) {
+      const response = await new Promise((resolve, reject) => {
+        const socket = connect(port, '127.0.0.1', () => {
+          socket.write(`POST ${target} HTTP/1.1\r\nHost: localhost\r\n${framing}\r\nConnection: keep-alive\r\n\r\n`);
+        });
+        let data = '';
+        const timer = setTimeout(() => {
+          socket.destroy();
+          reject(new Error('Rejected request connection did not close promptly'));
+        }, 2000);
+        socket.on('data', chunk => { data += chunk; });
+        socket.on('end', () => { clearTimeout(timer); resolve(data); });
+        socket.on('error', error => { clearTimeout(timer); reject(error); });
+      });
+      assert.match(response, /^HTTP\/1\.1 400 /);
+      assert.match(response, /\r\nconnection: close\r\n/i);
+      assert.match(response, /{"error":"Invalid request target\."}/);
+    }
+  }
+});

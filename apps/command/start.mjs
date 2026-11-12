@@ -90,7 +90,7 @@ const proxy = (req, res) => {
   try {
     target = new URL(buildValidatedUrl(`http://127.0.0.1:${Number(internalPort)}`, req.url));
   } catch {
-    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.writeHead(400, { 'Content-Type': 'application/json', Connection: 'close' });
     res.end('{"error":"Invalid request target."}');
     return;
   }
@@ -114,7 +114,7 @@ const server = http.createServer((req, res) => {
   try {
     path = new URL(req.url, 'http://localhost').pathname;
   } catch {
-    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.writeHead(400, { 'Content-Type': 'application/json', Connection: 'close' });
     res.end('{"error":"Invalid request target."}');
     return;
   }

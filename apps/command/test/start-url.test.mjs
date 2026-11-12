@@ -20,6 +20,24 @@ async function freePort() {
   });
 }
 
+async function portIsFree(port) {
+  return new Promise(resolve => {
+    const server = createServer();
+    server.once('error', () => resolve(false));
+    server.listen(port, '127.0.0.1', () => {
+      server.close(() => resolve(true));
+    });
+  });
+}
+
+async function freeWrapperPort() {
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const port = await freeWrapperPort();
+    if (await portIsFree(3123 + (port % 1000))) return port;
+  }
+  throw new Error('Could not find free ports for the URL wrapper test.');
+}
+
 async function startWrapper(t, extraEnv = {}) {
   const port = await freePort();
   const dataDir = mkdtempSync(join(tmpdir(), 'cc-start-url-test-'));

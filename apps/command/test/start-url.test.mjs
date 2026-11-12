@@ -32,14 +32,14 @@ async function portIsFree(port) {
 
 async function freeWrapperPort() {
   for (let attempt = 0; attempt < 50; attempt++) {
-    const port = await freeWrapperPort();
+    const port = await freePort();
     if (await portIsFree(3123 + (port % 1000))) return port;
   }
   throw new Error('Could not find free ports for the URL wrapper test.');
 }
 
 async function startWrapper(t, extraEnv = {}) {
-  const port = await freePort();
+  const port = await freeWrapperPort();
   const dataDir = mkdtempSync(join(tmpdir(), 'cc-start-url-test-'));
   const child = spawn(process.execPath, [entry], {
     env: {

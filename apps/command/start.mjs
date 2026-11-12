@@ -69,8 +69,32 @@ child.once('close', (code, signal) => {
 });
 
 /** Forward a request to the loopback backend and apply the edge CSP. */
+function buildValidatedUrl(baseUrl, requestTarget) {
+  try {
+    if (requestTarget.includes('/../') || /\/%2e%2e\//i.test(requestTarget)) {
+      throw new Error('Invalid path');
+    }
+    const base = new URL(baseUrl);
+    const url = new URL(requestTarget, base);
+    if (url.origin !== base.origin) {
+      throw new Error('Invalid host');
+    }
+    return url.href;
+  } catch {
+    throw new Error('Invalid URL');
+  }
+}
+
 const proxy = (req, res) => {
-  const upstream = http.request({ host: '127.0.0.1', port: internalPort, path: req.url, method: req.method, headers: req.headers }, upstreamRes => {
+  let target;
+  try {
+    target = new URL(buildValidatedUrl(`http://127.0.0.1:${Number(internalPort)}`, req.url));
+  } catch {
+    res.writeHead(400, { 'Content-Type': 'application/json' });
+    res.end('{"error":"Invalid request target."}');
+    return;
+  }
+  const upstream = http.request({ host: '127.0.0.1', port: internalPort, path: target.pathname + target.search, method: req.method, headers: req.headers }, upstreamRes => {
     const headers = { ...upstreamRes.headers };
     headers['content-security-policy'] = CSP;
     res.writeHead(upstreamRes.statusCode || 502, headers);

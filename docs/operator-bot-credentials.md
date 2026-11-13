@@ -1,6 +1,6 @@
 # Operator notes: customer-owned Discord bots
 
-This document is for operators maintaining Chaotic Command. It describes the security and operational requirements for the Bring Your Own Bot feature.
+This document is for operators maintaining Chaotic Minds Command. It describes the security and operational requirements for the Bring Your Own Bot feature.
 
 ## Configuration
 
@@ -39,11 +39,11 @@ Every bot lookup is scoped by the authenticated Discord user ID. Per-server assi
 
 The application supports up to five personal bots per account. Deleting a connected bot removes its credential record and that account's server assignments. It does not revoke the token at Discord or remove the bot from Discord servers.
 
-If a customer reports a compromised token, tell them to reset it in the Discord Developer Portal. Removing the stored credential from Chaotic Command does not invalidate a token that has already been copied.
+If a customer reports a compromised token, tell them to reset it in the Discord Developer Portal. Removing the stored credential from Chaotic Minds Command does not invalidate a token that has already been copied.
 
 ## Permission model
 
-Chaotic Command requests only:
+Chaotic Minds Command requests only:
 
 - Manage Channels
 - Manage Roles

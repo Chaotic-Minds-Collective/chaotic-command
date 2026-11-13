@@ -57,8 +57,11 @@ function toPgPlaceholders(sql) {
   while (i < sql.length) {
     const char = sql[i], next = sql[i + 1];
     if (char === "'") {
+      const escapeString = i > 0 && /[eE]/.test(sql[i - 1]) &&
+        (i < 2 || !/[A-Za-z0-9_$\u0080-\uFFFF]/.test(sql[i - 2]));
       out += char; i++;
       while (i < sql.length) {
+        if (escapeString && sql[i] === '\\' && i + 1 < sql.length) { out += sql[i] + sql[i + 1]; i += 2; continue; }
         out += sql[i];
         if (sql[i] === "'" && sql[i + 1] === "'") { out += sql[i + 1]; i += 2; continue; }
         if (sql[i] === "'") { i++; break; }
@@ -283,8 +286,9 @@ async function runMigrations(adapter, executeSql) {
  * accept bound arguments and resolve to the first row or undefined, all rows, and
  * { changes, lastInsertRowid }, respectively; PostgreSQL always returns null for
  * lastInsertRowid. query resolves to rows and defaults params to an empty array.
- * exec accepts SQL without parameters. PostgreSQL prepare and query replace every
- * `?`, even inside literals, and translate only supported SQLite syntax.
+ * exec accepts SQL without parameters. PostgreSQL prepare and query number `?`
+ * placeholders outside quoted strings, identifiers, and comments, and translate
+ * only supported SQLite syntax.
  *
  * Opening or migrating can reject with driver, filesystem, or SQL errors; migration
  * failures roll back schema changes and close the adapter. prepare can throw synchronously, and execution

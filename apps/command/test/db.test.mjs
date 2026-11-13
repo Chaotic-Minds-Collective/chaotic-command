@@ -88,6 +88,7 @@ test('Postgres TLS configuration, transaction client, rollback and failure clean
       ['postgres://remote.invalid/db', 'fixture-ca', { rejectUnauthorized: true, ca: 'fixture-ca' }]
     ]) {
       const db = await openDb({ env: { DATABASE_URL: url, DATABASE_SSL_CA: ca } });
+      assert.equal(poolCalls.length, 0, 'migration queries must use the checked-out client');
       assert.deepEqual(config.ssl, expected);
       assert.equal(config.connectionString, undefined);
       assert.equal(calls[0].sql, 'BEGIN');
@@ -125,12 +126,26 @@ test('Postgres TLS configuration, transaction client, rollback and failure clean
         assert.equal(poolCalls.length, beforeInvalid, 'rejected SQL must never reach the PostgreSQL pool');
         await db.prepare("SELECT '?' AS literal, ? AS bound -- ? ignored\n").get('bound-value');
         assert.deepEqual(poolCalls.at(-1), { sql: "SELECT '?' AS literal, $1 AS bound -- ? ignored\n", params: ['bound-value'] });
+        for (const [sql, expectedSql] of [
+          ["SELECT 'it''s ?' AS literal, ?", "SELECT 'it''s ?' AS literal, $1"],
+          ['SELECT "a""?b", ?', 'SELECT "a""?b", $1'],
+          ['SELECT ? /* outer ? /* inner ? */ still ? */, ?', 'SELECT $1 /* outer ? /* inner ? */ still ? */, $2'],
+          ['SELECT $$?$$, ?, $tag$?$tag$, ?', 'SELECT $$?$$, $1, $tag$?$tag$, $2'],
+          ["SELECT E'it\\'s ?', ?", "SELECT E'it\\'s ?', $1"],
+          ["SELECT e'backslash\\\\', ?", "SELECT e'backslash\\\\', $1"],
+          ["SELECT 'backslash\\', ?", "SELECT 'backslash\\', $1"]
+        ]) {
+          const params = expectedSql.includes('$2') ? ['first', 'second'] : ['first'];
+          await db.query(sql, params);
+          assert.deepEqual(poolCalls.at(-1), { sql: expectedSql, params });
+        }
       }
       await db.close();
       assert.equal(ended, true);
     }
     failure = failClose = true;
     await assert.rejects(openDb({ env: { DATABASE_URL: 'postgres://localhost/db' } }), error => error === original);
+    assert.equal(poolCalls.length, 0, 'failed migrations must use the checked-out client');
     assert.equal(calls.at(-1).sql, 'ROLLBACK');
     assert.equal(released, true);
     assert.equal(ended, true);

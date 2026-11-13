@@ -2,7 +2,7 @@
 
 <!-- coderabbit-ai-generated-section:v1:dcbea34f0aa8477f5dba30f9afdd36b6e676851b37341f7d7532aac5510f1263 -->
 
-# Chaotic Command persistence
+# Chaotic Minds Command persistence
 
 ## Drivers
 

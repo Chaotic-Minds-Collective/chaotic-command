@@ -26,6 +26,17 @@ test('SQLite serializes concurrent startup and repeated migrations', async t => 
   assert.equal((await databases[1].prepare('SELECT value FROM notes WHERE guild = ?').get('guild')).value, 'persisted');
 });
 
+test('SQLite binds migration filenames instead of interpolating them into SQL', async t => {
+  const dir = await fixture(t);
+  await cp(new URL('../db/', import.meta.url), join(dir, 'db'), { recursive: true });
+  const migrationName = "002_quote'--.sql";
+  await writeFile(join(dir, 'db/migrations', migrationName), 'CREATE TABLE quoted_migration (id TEXT);');
+  const isolated = await import(pathToFileURL(join(dir, 'db/index.mjs')));
+  const db = await isolated.openDb({ env: {}, dbPath: join(dir, 'quoted.sqlite') });
+  t.after(() => db.close());
+  assert.ok((await db.query('SELECT name FROM schema_migrations')).some(row => row.name === migrationName));
+});
+
 test('SQLite rolls back base schema, earlier files, and a partial failing file', async t => {
   const dir = await fixture(t);
   await cp(new URL('../db/', import.meta.url), join(dir, 'db'), { recursive: true });
@@ -39,23 +50,23 @@ test('SQLite rolls back base schema, earlier files, and a partial failing file',
 });
 
 test('Postgres TLS configuration, transaction client, rollback and failure cleanup', async () => {
-  let config, calls, ended, released, failure, failClose;
+  let config, calls, poolCalls, ended, released, failure, failClose;
   const original = new Error('migration failed');
   globalThis.__dbTestPg = {
     Client: pg.Client,
     Pool: class {
-      constructor(options) { config = options; calls = []; ended = released = false; }
+      constructor(options) { config = options; calls = []; poolCalls = []; ended = released = false; }
       async connect() {
         return {
-          async query(sql) {
-            calls.push(sql);
+          async query(sql, params = []) {
+            calls.push({ sql, params });
             if (failure && sql.startsWith('CREATE TABLE')) throw original;
             return { rows: [] };
           },
           release() { released = true; }
         };
       }
-      async query() { throw new Error('Migration escaped dedicated client'); }
+      async query(sql, params = []) { poolCalls.push({ sql, params }); return { rows: [], rowCount: 1 }; }
       async end() { ended = true; if (failClose) throw new Error('close failed'); }
     }
   };
@@ -77,20 +88,65 @@ test('Postgres TLS configuration, transaction client, rollback and failure clean
       ['postgres://remote.invalid/db', 'fixture-ca', { rejectUnauthorized: true, ca: 'fixture-ca' }]
     ]) {
       const db = await openDb({ env: { DATABASE_URL: url, DATABASE_SSL_CA: ca } });
+      assert.equal(poolCalls.length, 0, 'migration queries must use the checked-out client');
       assert.deepEqual(config.ssl, expected);
       assert.equal(config.connectionString, undefined);
-      assert.equal(calls[0], 'BEGIN');
-      assert.match(calls[1], /pg_advisory_xact_lock/);
-      assert.ok(calls.findIndex(sql => sql.startsWith('SELECT name')) > 1);
-      assert.ok(calls.some(sql => sql.startsWith('INSERT INTO schema_migrations')));
-      assert.equal(calls.at(-1), 'COMMIT');
+      assert.equal(calls[0].sql, 'BEGIN');
+      assert.match(calls[1].sql, /pg_advisory_xact_lock/);
+      assert.ok(calls.findIndex(call => call.sql.startsWith('SELECT name')) > 1);
+      const migrationInsert = calls.find(call => call.sql.startsWith('INSERT INTO schema_migrations'));
+      assert.equal(migrationInsert.sql, 'INSERT INTO schema_migrations (name, applied_at) VALUES ($1, $2)');
+      assert.equal(migrationInsert.params.length, 2);
+      assert.equal(typeof migrationInsert.params[0], 'string');
+      assert.equal(typeof migrationInsert.params[1], 'number');
+      assert.equal(calls.at(-1).sql, 'COMMIT');
       assert.equal(released, true);
+      if (url === 'postgres://localhost/db') {
+        const inputs = [
+          ['INSERT OR REPLACE INTO sessions VALUES (?, ?, ?)', ['session-id', 'session-data', 123]],
+          ['INSERT OR REPLACE INTO notes VALUES (?, ?)', ['guild-id', 'note-value']],
+          ['INSERT OR REPLACE INTO guild_bot_selections (owner_id, guild_id, bot_id) VALUES (?, ?, ?)', ['owner-id', 'guild-id', 'bot-id']]
+        ];
+        const expected = [
+          'INSERT INTO sessions (id, data, expires) VALUES ($1, $2, $3) ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, expires = EXCLUDED.expires',
+          'INSERT INTO notes (guild, value) VALUES ($1, $2) ON CONFLICT (guild) DO UPDATE SET value = EXCLUDED.value',
+          'INSERT INTO guild_bot_selections (owner_id, guild_id, bot_id) VALUES ($1, $2, $3) ON CONFLICT (owner_id, guild_id) DO UPDATE SET bot_id = EXCLUDED.bot_id'
+        ];
+        for (let index = 0; index < inputs.length; index++) {
+          await db.prepare(inputs[index][0]).run(...inputs[index][1]);
+          assert.deepEqual(poolCalls.at(-1), { sql: expected[index], params: inputs[index][1] });
+        }
+        const beforeInvalid = poolCalls.length;
+        for (const sql of [
+          'INSERT OR REPLACE INTO toString VALUES (?, ?)',
+          'INSERT OR REPLACE INTO sessions (id, data, expires) VALUES (?, ?, ?); DROP TABLE sessions',
+          'INSERT OR REPLACE INTO sessions (id, data, expires) VALUES (?, ?, (SELECT 1))',
+          'INSERT OR REPLACE INTO sessions (id, injected_column, expires) VALUES (?, ?, ?)'
+        ]) assert.throws(() => db.prepare(sql), /allowlist|allowlisted|Unsupported|values must/);
+        assert.equal(poolCalls.length, beforeInvalid, 'rejected SQL must never reach the PostgreSQL pool');
+        await db.prepare("SELECT '?' AS literal, ? AS bound -- ? ignored\n").get('bound-value');
+        assert.deepEqual(poolCalls.at(-1), { sql: "SELECT '?' AS literal, $1 AS bound -- ? ignored\n", params: ['bound-value'] });
+        for (const [sql, expectedSql] of [
+          ["SELECT 'it''s ?' AS literal, ?", "SELECT 'it''s ?' AS literal, $1"],
+          ['SELECT "a""?b", ?', 'SELECT "a""?b", $1'],
+          ['SELECT ? /* outer ? /* inner ? */ still ? */, ?', 'SELECT $1 /* outer ? /* inner ? */ still ? */, $2'],
+          ['SELECT $$?$$, ?, $tag$?$tag$, ?', 'SELECT $$?$$, $1, $tag$?$tag$, $2'],
+          ["SELECT E'it\\'s ?', ?", "SELECT E'it\\'s ?', $1"],
+          ["SELECT e'backslash\\\\', ?", "SELECT e'backslash\\\\', $1"],
+          ["SELECT 'backslash\\', ?", "SELECT 'backslash\\', $1"]
+        ]) {
+          const params = expectedSql.includes('$2') ? ['first', 'second'] : ['first'];
+          await db.query(sql, params);
+          assert.deepEqual(poolCalls.at(-1), { sql: expectedSql, params });
+        }
+      }
       await db.close();
       assert.equal(ended, true);
     }
     failure = failClose = true;
     await assert.rejects(openDb({ env: { DATABASE_URL: 'postgres://localhost/db' } }), error => error === original);
-    assert.equal(calls.at(-1), 'ROLLBACK');
+    assert.equal(poolCalls.length, 0, 'failed migrations must use the checked-out client');
+    assert.equal(calls.at(-1).sql, 'ROLLBACK');
     assert.equal(released, true);
     assert.equal(ended, true);
   } finally {

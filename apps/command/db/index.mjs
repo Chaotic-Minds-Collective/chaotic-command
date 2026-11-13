@@ -15,37 +15,97 @@ import { fileURLToPath } from 'node:url';
 
 const migrationsDir = join(dirname(fileURLToPath(import.meta.url)), 'migrations');
 
-// Tables where INSERT OR REPLACE must map to a Postgres upsert.
-const SQLITE_TABLES = {
-  sessions: { columns: ['id', 'data', 'expires'], key: ['id'] },
-  notes: { columns: ['guild', 'value'], key: ['guild'] },
-  guild_bot_selections: { columns: ['owner_id', 'guild_id', 'bot_id'], key: ['owner_id', 'guild_id'] }
-};
+// Only these frozen identifiers may be emitted by the SQLite upsert translator.
+const SQLITE_TABLES = Object.freeze({
+  sessions: Object.freeze({ columns: Object.freeze(['id', 'data', 'expires']), key: Object.freeze(['id']) }),
+  notes: Object.freeze({ columns: Object.freeze(['guild', 'value']), key: Object.freeze(['guild']) }),
+  guild_bot_selections: Object.freeze({ columns: Object.freeze(['owner_id', 'guild_id', 'bot_id']), key: Object.freeze(['owner_id', 'guild_id']) })
+});
 
 /**
- * Rewrite supported SQLite syntax for PostgreSQL using case-sensitive text matching.
- * INSERT OR REPLACE is supported only for sessions, notes, and guild_bot_selections;
- * a matching statement for another table throws an error.
+ * Translate only the exact INSERT OR REPLACE shapes used by this application.
+ * Identifiers and the conflict clause come exclusively from the frozen allowlist;
+ * values must be placeholders and are always supplied separately to `pg`.
  */
 function translatePostgres(sql) {
-  let out = sql.replace(/PRAGMA[^;]*;?/g, '');
-  out = out.replace(/INSERT OR REPLACE INTO (\w+)(\s*\([^)]*\))?\s*VALUES\s*\(([^)]*)\)/g, (match, table, columnList, values) => {
+  const upsertMarker = /^\s*INSERT\s+OR\s+REPLACE\s+INTO\b/i;
+  if (upsertMarker.test(sql)) {
+    const match = /^\s*INSERT\s+OR\s+REPLACE\s+INTO\s+([A-Za-z_][A-Za-z0-9_]*)(?:\s*\(([^)]*)\))?\s*VALUES\s*\(([^)]*)\)\s*;?\s*$/i.exec(sql);
+    if (!match) throw new Error('Unsupported INSERT OR REPLACE statement shape.');
+    const [, table, columnList, values] = match;
+    if (!Object.hasOwn(SQLITE_TABLES, table)) throw new Error('No Postgres conflict target is allowlisted for this table.');
     const spec = SQLITE_TABLES[table];
-    if (!spec) throw new Error(`No Postgres conflict target defined for table ${table}`);
-    const columns = columnList ? columnList.replace(/[()]/g, '').split(',').map(part => part.trim()) : spec.columns;
-    const setters = columns.filter(column => !spec.key.includes(column))
-      .map(column => `${column} = EXCLUDED.${column}`)
-      .join(', ');
-    const conflict = spec.key.join(', ');
-    return `INSERT INTO ${table}${columnList || ` (${spec.columns.join(', ')})`} VALUES (${values}) ON CONFLICT (${conflict}) DO UPDATE SET ${setters}`;
-  });
-  return out.replace(/\s+COLLATE NOCASE/g, '');
+    const columns = columnList === undefined ? spec.columns : columnList.split(',').map(column => column.trim());
+    if (columns.length !== spec.columns.length || columns.some((column, index) => column !== spec.columns[index])) {
+      throw new Error('INSERT OR REPLACE columns do not match the allowlisted table definition.');
+    }
+    if (!/^\s*\?(?:\s*,\s*\?)*\s*$/.test(values) || (values.match(/\?/g) || []).length !== spec.columns.length) {
+      throw new Error('INSERT OR REPLACE values must contain exactly one placeholder per allowlisted column.');
+    }
+    const setters = spec.columns.filter(column => !spec.key.includes(column))
+      .map(column => `${column} = EXCLUDED.${column}`).join(', ');
+    const placeholders = spec.columns.map(() => '?').join(', ');
+    return `INSERT INTO ${table} (${spec.columns.join(', ')}) VALUES (${placeholders}) ON CONFLICT (${spec.key.join(', ')}) DO UPDATE SET ${setters}`;
+  }
+  const out = sql.replace(/PRAGMA[^;]*;?/g, '');
+  return out.replace(/\s+COLLATE NOCASE\b/g, '');
 }
 
-/** Replace every `?` with a numbered PostgreSQL placeholder, including those in literals. */
+/** Number placeholders without rewriting question marks in SQL strings or comments. */
 function toPgPlaceholders(sql) {
-  let index = 0;
-  return sql.replace(/\?/g, () => `$${++index}`);
+  let out = '', index = 0, i = 0;
+  while (i < sql.length) {
+    const char = sql[i], next = sql[i + 1];
+    if (char === "'") {
+      const escapeString = i > 0 && /[eE]/.test(sql[i - 1]) &&
+        (i < 2 || !/[A-Za-z0-9_$\u0080-\uFFFF]/.test(sql[i - 2]));
+      out += char; i++;
+      while (i < sql.length) {
+        if (escapeString && sql[i] === '\\' && i + 1 < sql.length) { out += sql[i] + sql[i + 1]; i += 2; continue; }
+        out += sql[i];
+        if (sql[i] === "'" && sql[i + 1] === "'") { out += sql[i + 1]; i += 2; continue; }
+        if (sql[i] === "'") { i++; break; }
+        i++;
+      }
+      continue;
+    }
+    if (char === '"') {
+      out += char; i++;
+      while (i < sql.length) {
+        out += sql[i];
+        if (sql[i] === '"' && sql[i + 1] === '"') { out += sql[i + 1]; i += 2; continue; }
+        if (sql[i] === '"') { i++; break; }
+        i++;
+      }
+      continue;
+    }
+    if (char === '-' && next === '-') {
+      const end = sql.indexOf('\n', i + 2);
+      const stop = end === -1 ? sql.length : end;
+      out += sql.slice(i, stop); i = stop; continue;
+    }
+    if (char === '/' && next === '*') {
+      let depth = 1, end = i + 2;
+      while (end < sql.length && depth) {
+        if (sql[end] === '/' && sql[end + 1] === '*') { depth++; end += 2; }
+        else if (sql[end] === '*' && sql[end + 1] === '/') { depth--; end += 2; }
+        else end++;
+      }
+      out += sql.slice(i, end); i = end; continue;
+    }
+    if (char === '$') {
+      const delimiter = /^\$[A-Za-z_][A-Za-z0-9_]*\$|^\$\$/.exec(sql.slice(i))?.[0];
+      if (delimiter) {
+        const end = sql.indexOf(delimiter, i + delimiter.length);
+        const stop = end === -1 ? sql.length : end + delimiter.length;
+        out += sql.slice(i, stop); i = stop; continue;
+      }
+    }
+    if (char === '?') out += `$${++index}`;
+    else out += char;
+    i++;
+  }
+  return out;
 }
 
 const SCHEMA = {
@@ -97,7 +157,10 @@ function sqliteAdapter(db, filename) {
       await sqliteRetry(() => db.exec('BEGIN IMMEDIATE'));
       try {
         db.exec(SCHEMA.sqlite);
-        await runMigrations(self, async sql => db.exec(sql));
+        await runMigrations(self, async (sql, params = []) => {
+          if (params.length) db.prepare(sql).run(...params);
+          else db.exec(sql);
+        });
         db.exec('COMMIT');
       } catch (error) {
         try { db.exec('ROLLBACK'); } catch { /* Preserve the migration error. */ }
@@ -163,7 +226,10 @@ async function postgresAdapter(connectionString, ca) {
         await client.query('BEGIN');
         await client.query('SELECT pg_advisory_xact_lock(1735289201)');
         await client.query(SCHEMA.postgres);
-        await runMigrations({ query: async sql => (await client.query(sql)).rows }, async sql => { await client.query(sql); });
+        await runMigrations({ query: async sql => (await client.query(sql)).rows }, async (sql, params = []) => {
+          if (params.length) await client.query(toPgPlaceholders(translatePostgres(sql)), params);
+          else await client.query(sql);
+        });
         await client.query('COMMIT');
       } catch (error) {
         try { await client.query('ROLLBACK'); } catch { /* Preserve the migration error. */ }
@@ -202,7 +268,7 @@ async function runMigrations(adapter, executeSql) {
   for (const name of files) {
     if (applied.has(name)) continue;
     await executeSql(readFileSync(join(migrationsDir, name), 'utf8'));
-    await executeSql(`INSERT INTO schema_migrations (name, applied_at) VALUES ('${name.replace(/'/g, "''")}', ${Date.now()})`);
+    await executeSql('INSERT INTO schema_migrations (name, applied_at) VALUES (?, ?)', [name, Date.now()]);
   }
 }
 
@@ -220,8 +286,9 @@ async function runMigrations(adapter, executeSql) {
  * accept bound arguments and resolve to the first row or undefined, all rows, and
  * { changes, lastInsertRowid }, respectively; PostgreSQL always returns null for
  * lastInsertRowid. query resolves to rows and defaults params to an empty array.
- * exec accepts SQL without parameters. PostgreSQL prepare and query replace every
- * `?`, even inside literals, and translate only supported SQLite syntax.
+ * exec accepts SQL without parameters. PostgreSQL prepare and query number `?`
+ * placeholders outside quoted strings, identifiers, and comments, and translate
+ * only supported SQLite syntax.
  *
  * Opening or migrating can reject with driver, filesystem, or SQL errors; migration
  * failures roll back schema changes and close the adapter. prepare can throw synchronously, and execution

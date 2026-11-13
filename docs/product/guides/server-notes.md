@@ -2,11 +2,11 @@
 title: "Use shared server notes"
 description: "Save and revisit non-sensitive notes for a selected Discord server, with access limited to people who currently manage that server."
 ---
-Chaotic Command includes a notes area for the selected Discord server. Use it to keep short operational reminders that current server managers can revisit.
+Chaotic Minds Command includes a notes area for the selected Discord server. Use it to keep short operational reminders that current server managers can revisit.
 
 ## Save notes
 
-1. Sign in to Chaotic Command.
+1. Sign in to Chaotic Minds Command.
 2. Select the server.
 3. Enter or update the notes in the server notes area.
 4. Select the save action and wait for the saved confirmation.

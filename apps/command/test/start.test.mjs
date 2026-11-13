@@ -152,7 +152,7 @@ test('wrapper proxies the homepage and API to the app server with the font-enabl
   const { url } = await startWrapper(t);
   const page = await fetch(`${url}/`);
   assert.equal(page.status, 200);
-  assert.match(await page.text(), /Chaotic Command/);
+  assert.match(await page.text(), /Chaotic Minds Command/);
   assert.match(page.headers.get('content-security-policy'), /fonts\.gstatic\.com/);
 
   const health = await fetch(`${url}/api/health`);

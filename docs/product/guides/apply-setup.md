@@ -1,8 +1,8 @@
 ---
 title: "Apply a reviewed setup"
-description: "Apply a Chaotic Command preview only after checking its contents, entering the exact server confirmation phrase, and accepting the final prompt."
+description: "Apply a Chaotic Minds Command preview only after checking its contents, entering the exact server confirmation phrase, and accepting the final prompt."
 ---
-Applying a setup is the point where Chaotic Command sends create requests to Discord. Nothing is written when you only select a server or preview a template.
+Applying a setup is the point where Chaotic Minds Command sends create requests to Discord. Nothing is written when you only select a server or preview a template.
 
 ## Before you apply
 
@@ -21,11 +21,11 @@ Applying a setup is the point where Chaotic Command sends create requests to Dis
    Read the browser confirmation and accept only if you intend to create the listed objects in that server. Cancelling leaves the setup unapplied.
 
 3. **Review the result**
-   The app reports the completed items and any error. Check the result in both Chaotic Command and Discord.
+   The app reports the completed items and any error. Check the result in both Chaotic Minds Command and Discord.
 
 ## Understand partial completion
 
-Discord setup operations are not transactional. If a request fails after some items have been created, those completed items remain in Discord. Chaotic Command does not automatically roll them back or delete them.
+Discord setup operations are not transactional. If a request fails after some items have been created, those completed items remain in Discord. Chaotic Minds Command does not automatically roll them back or delete them.
 
 If the result reports partial completion:
 
@@ -34,7 +34,7 @@ If the result reports partial completion:
 3. Generate a fresh preview.
 4. Confirm completed items are now shown as reused before trying again.
 
-Chaotic Command reuses exact matches to help avoid duplicates. Do not repeatedly submit an old preview.
+Chaotic Minds Command reuses exact matches to help avoid duplicates. Do not repeatedly submit an old preview.
 
 ## What applying does not do
 

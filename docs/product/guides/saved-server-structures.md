@@ -2,11 +2,11 @@
 title: "Save and reuse personal server structures"
 description: "Save custom Discord layouts to your account, load them into the editor, rename or delete templates, and understand personal storage limits."
 ---
-Chaotic Command lets you keep up to 20 personal saved structures for reuse across server setup sessions. Each saved structure belongs to the Discord account that created it, and loading one only fills the custom editor. It does not make changes to a Discord server.
+Chaotic Minds Command lets you keep up to 20 personal saved structures for reuse across server setup sessions. Each saved structure belongs to the Discord account that created it, and loading one only fills the custom editor. It does not make changes to a Discord server.
 
 ## Save a custom structure
 
-1. Sign in to Chaotic Command with Discord.
+1. Sign in to Chaotic Minds Command with Discord.
 2. Open the custom structure editor.
 3. Enter and review your role names, categories, and text channels.
 4. In **Your personal saved structures**, enter a template name.

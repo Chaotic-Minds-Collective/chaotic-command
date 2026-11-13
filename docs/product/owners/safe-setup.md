@@ -1,8 +1,8 @@
 ---
 title: "Run a safe server setup"
-description: "Use a disposable Discord server first, review every proposed change, and understand the limits of Chaotic Command before applying a template."
+description: "Use a disposable Discord server first, review every proposed change, and understand the limits of Chaotic Minds Command before applying a template."
 ---
-As the server owner, you are responsible for deciding whether a proposed setup is appropriate for your community. Chaotic Command provides a preview and explicit confirmation, but Discord changes still require your review.
+As the server owner, you are responsible for deciding whether a proposed setup is appropriate for your community. Chaotic Minds Command provides a preview and explicit confirmation, but Discord changes still require your review.
 
 ## Test in a disposable server
 
@@ -20,7 +20,7 @@ For first-time testing or acceptance checks, create a new, empty Discord server.
 
 ## Understand the safety boundaries
 
-Chaotic Command is additive. It creates missing objects and reuses exact matches. It does not delete existing roles or channels, modify permissions on reused roles, assign roles to members, post messages, or configure private-channel access.
+Chaotic Minds Command is additive. It creates missing objects and reuses exact matches. It does not delete existing roles or channels, modify permissions on reused roles, assign roles to members, post messages, or configure private-channel access.
 
 Discord operations are not transactional. If an error occurs partway through setup, some objects may already have been created. The app reports completed work. Inspect the server and create a fresh preview before retrying.
 

@@ -1,8 +1,8 @@
 ---
-title: "Chaotic Command changelog"
-description: "Track verified Chaotic Command functionality and product changes, with clear notes about safety improvements and features that remain unreleased."
+title: "Chaotic Minds Command changelog"
+description: "Track verified Chaotic Minds Command functionality and product changes, with clear notes about safety improvements and features that remain unreleased."
 ---
-This changelog records functionality and engineering changes merged into the Chaotic Command `main` branch. Proposed work and unmerged branches are not described as released features.
+This changelog records functionality and engineering changes merged into the Chaotic Minds Command `main` branch. Proposed work and unmerged branches are not described as released features.
 
 ## November 1, 2026
 
@@ -37,7 +37,7 @@ See [connect your own Discord bot](../../customer-bring-your-own-bot.md).
 Updated in [PR #13](https://github.com/Chaotic-Minds-Collective/Chaotic-Command/pull/13).
 
 - Updated the disposable-server runbook for customer-owned bots.
-- Clarified the separation between Chaotic Command OAuth sign-in and personal bot credentials.
+- Clarified the separation between Chaotic Minds Command OAuth sign-in and personal bot credentials.
 - Added acceptance steps for token handling, bot assignment, account isolation, and removal.
 
 ### Preview identity and permission-context binding

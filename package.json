@@ -1,5 +1,5 @@
 {
-  "name": "chaotic-command",
+  "name": "cc-command-site",
   "private": true,
   "type": "module",
   "engines": { "node": ">=24" },

@@ -1,22 +1,22 @@
 ---
 title: "Frequently asked questions"
-description: "Answers about Chaotic Command access, bot permissions, personal bots, templates, custom structures, AI-assisted design, and previews."
+description: "Answers about Chaotic Minds Command access, bot permissions, personal bots, templates, custom structures, AI-assisted design, and previews."
 ---
-## Who can use Chaotic Command?
+## Who can use Chaotic Minds Command?
 
 A signed-in Discord user must own the selected server or have Manage Server or Administrator permission. Ordinary server members do not have access to the setup workflow.
 
 ## Can I use my own Discord bot?
 
-Yes. Create a bot in the Discord Developer Portal, then connect its bot token under **Your Discord bots** in Chaotic Command. You can connect up to five personal bots and assign a different bot to each server. See [connect your own Discord bot](../customer-bring-your-own-bot.md).
+Yes. Create a bot in the Discord Developer Portal, then connect its bot token under **Your Discord bots** in Chaotic Minds Command. You can connect up to five personal bots and assign a different bot to each server. See [connect your own Discord bot](../customer-bring-your-own-bot.md).
 
 ## Do I need to create an OAuth app for my personal bot?
 
-No. You still sign in to Chaotic Command using its normal **Sign in with Discord** button. Your personal bot only needs its bot token. You do not need to provide its client secret or configure an OAuth redirect URL for it.
+No. You still sign in to Chaotic Minds Command using its normal **Sign in with Discord** button. Your personal bot only needs its bot token. You do not need to provide its client secret or configure an OAuth redirect URL for it.
 
 ## Is my bot token visible after I connect it?
 
-No. Chaotic Command verifies the token with Discord and stores it encrypted at rest. The token is not returned in the bot list. Treat it like a password and reset it in the Discord Developer Portal if it may have been exposed.
+No. Chaotic Minds Command verifies the token with Discord and stores it encrypted at rest. The token is not returned in the bot list. Treat it like a password and reset it in the Discord Developer Portal if it may have been exposed.
 
 ## Can I connect more than one bot?
 
@@ -28,7 +28,7 @@ No. A server-specific bot assignment takes precedence. Changing the default does
 
 ## Does removing a bot revoke its Discord token?
 
-No. Removing a personal bot deletes its stored credential and your server assignments from Chaotic Command. It does not reset the token, delete the Discord application, or remove the bot from servers. Reset an exposed token in the Developer Portal.
+No. Removing a personal bot deletes its stored credential and your server assignments from Chaotic Minds Command. It does not reset the token, delete the Discord application, or remove the bot from servers. Reset an exposed token in the Developer Portal.
 
 ## Does the bot need Administrator?
 
@@ -50,9 +50,9 @@ No. Personal saved structures are visible only to the Discord account that saved
 
 No. Loading replaces the custom editor fields only. You must select a server, create a fresh preview, review the proposed changes, and complete the normal confirmation steps before the app makes Discord changes.
 
-## Does Chaotic Command connect directly to ChatGPT or another AI provider?
+## Does Chaotic Minds Command connect directly to ChatGPT or another AI provider?
 
-No. The current AI-assisted workflow builds a prompt that you copy into an external AI assistant. You then paste the assistant's JSON response into Chaotic Command. The app does not make AI API calls, require an AI API key, or automatically transmit your server brief.
+No. The current AI-assisted workflow builds a prompt that you copy into an external AI assistant. You then paste the assistant's JSON response into Chaotic Minds Command. The app does not make AI API calls, require an AI API key, or automatically transmit your server brief.
 
 ## Is AI-generated content applied automatically?
 
@@ -66,7 +66,7 @@ Only role names, category names, and text channel names are accepted. Permission
 
 No. Custom structures define names and category membership only. New roles start with zero permissions and are not assigned to members. New channels inherit category or server visibility and may be public.
 
-## Does Chaotic Command assign roles to members?
+## Does Chaotic Minds Command assign roles to members?
 
 No. New roles start with zero permissions and are not assigned to members. An administrator configures and assigns roles in Discord.
 
@@ -76,13 +76,13 @@ No. Exact matching roles are reused without changing their permissions. The prev
 
 ## Are new channels private?
 
-Not automatically. New channels inherit category or server visibility and may be public. Chaotic Command does not configure private-channel permission overwrites. Review access in Discord before members use the channels.
+Not automatically. New channels inherit category or server visibility and may be public. Chaotic Minds Command does not configure private-channel permission overwrites. Review access in Discord before members use the channels.
 
 ## Does previewing change my server?
 
 No. Previewing only displays the proposed plan. Discord writes happen only after you enter the exact confirmation phrase and accept the final browser confirmation.
 
-## Can Chaotic Command delete or roll back changes?
+## Can Chaotic Minds Command delete or roll back changes?
 
 No. The setup flow is additive and does not delete existing objects. Discord writes are not transactional, so a partial failure may leave completed objects in the server. Inspect the result and preview again before retrying.
 

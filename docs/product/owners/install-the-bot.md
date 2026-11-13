@@ -1,15 +1,15 @@
 ---
 title: "Install a Discord bot"
-description: "Choose the shared Chaotic Command bot or connect your own bot, authorize the required permissions, and confirm readiness."
+description: "Choose the shared Chaotic Minds Command bot or connect your own bot, authorize the required permissions, and confirm readiness."
 ---
-Chaotic Command needs a Discord bot installed in the selected server to audit its structure or create roles, categories, and channels. Depending on the deployment, you may use an operator-provided shared bot or connect a personal bot that you control.
+Chaotic Minds Command needs a Discord bot installed in the selected server to audit its structure or create roles, categories, and channels. Depending on the deployment, you may use an operator-provided shared bot or connect a personal bot that you control.
 
 ## Choose which bot to use
 
 - **Your own bot:** Follow [connect your own Discord bot](../../customer-bring-your-own-bot.md) to create a bot in the Discord Developer Portal, connect its token to your account, and assign it to a server.
-- **Shared bot:** If the operator has configured a shared Chaotic Command bot, use the installation link shown for the selected server.
+- **Shared bot:** If the operator has configured a shared Chaotic Minds Command bot, use the installation link shown for the selected server.
 
-You still sign in to Chaotic Command with **Sign in with Discord**. A personal bot does not require a separate OAuth client secret or redirect URL.
+You still sign in to Chaotic Minds Command with **Sign in with Discord**. A personal bot does not require a separate OAuth client secret or redirect URL.
 
 ## Requirements
 
@@ -21,7 +21,7 @@ You still sign in to Chaotic Command with **Sign in with Discord**. A personal b
 ## Install the selected bot
 
 1. **Select your server**
-   Sign in to Chaotic Command and choose the server you want to prepare.
+   Sign in to Chaotic Minds Command and choose the server you want to prepare.
 
 2. **Select the bot**
    Choose your personal bot or the shared bot option, when available. For a personal bot, select **Use selected bot** to assign it to this server.
@@ -36,9 +36,9 @@ You still sign in to Chaotic Command with **Sign in with Discord**. A personal b
    Authorize the selected bot for the intended server.
 
 6. **Check role position**
-   In Discord server settings, move the bot's role above the roles Chaotic Command may need to create or manage. Discord role hierarchy can prevent a bot from managing roles above its own role.
+   In Discord server settings, move the bot's role above the roles Chaotic Minds Command may need to create or manage. Discord role hierarchy can prevent a bot from managing roles above its own role.
 
-7. **Return to Chaotic Command**
+7. **Return to Chaotic Minds Command**
    Reselect the server. The app checks the selected bot's readiness.
 
 If the bot is still not ready, see [troubleshooting](../troubleshooting.md). Do not grant Administrator as a workaround.

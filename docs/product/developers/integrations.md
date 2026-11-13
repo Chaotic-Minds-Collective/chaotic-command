@@ -1,8 +1,8 @@
 ---
 title: "Understand external integrations"
-description: "Learn how Chaotic Command connects to Discord, GitHub, and external AI tools, and what remains unimplemented today."
+description: "Learn how Chaotic Minds Command connects to Discord, GitHub, and external AI tools, and what remains unimplemented today."
 ---
-Chaotic Command currently relies on Discord for authentication and server operations. GitHub is the source of truth for both application code and product documentation. Composio is being evaluated as an integration layer, but it is not part of the active application runtime.
+Chaotic Minds Command currently relies on Discord for authentication and server operations. GitHub is the source of truth for both application code and product documentation. Composio is being evaluated as an integration layer, but it is not part of the active application runtime.
 
 ## Discord
 
@@ -14,12 +14,12 @@ apps/command does not use a long-running Discord Gateway connection or privilege
 
 ## Composio status
 
-Composio is not currently wired into `apps/command`. The active server makes direct Discord REST requests. A connected Composio workspace or operator account does not automatically become available to every person using a deployed Chaotic Command instance.
+Composio is not currently wired into `apps/command`. The active server makes direct Discord REST requests. A connected Composio workspace or operator account does not automatically become available to every person using a deployed Chaotic Minds Command instance.
 
 Before adding a Composio adapter, define:
 
 - Which end-user account owns each external connection.
-- How Discord server access is scoped to the signed-in Chaotic Command account.
+- How Discord server access is scoped to the signed-in Chaotic Minds Command account.
 - Which Composio tools are allowed for each operation.
 - How read-only audit and preview remain separate from writes.
 - How the user reviews and confirms each server mutation.
@@ -42,6 +42,6 @@ Keep product documentation aligned with the implementation on the application's 
 
 ## External AI assistants
 
-The current AI-assisted design flow builds a constrained prompt for the user to copy into an external assistant. The user pastes the returned JSON into Chaotic Command for validation and review.
+The current AI-assisted design flow builds a constrained prompt for the user to copy into an external assistant. The user pastes the returned JSON into Chaotic Minds Command for validation and review.
 
 The app does not call an AI provider, store an AI API key, or automatically send the user's brief to an external service.

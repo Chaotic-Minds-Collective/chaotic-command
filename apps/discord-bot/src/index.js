@@ -1,4 +1,4 @@
-// Cloudflare Worker entrypoint for the Chaotic Command Discord bot.
+// Cloudflare Worker entrypoint for the Chaotic Minds Command Discord bot.
 // HTTP-only: interactions + webhook events arrive as signed POSTs; no gateway.
 
 import {

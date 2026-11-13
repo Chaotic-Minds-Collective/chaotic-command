@@ -2,7 +2,7 @@
 title: "Understand the application architecture"
 description: "See how the Node.js runtime, browser client, SQLite storage, Discord API, and preserved Bit workspace fit together before you extend the product."
 ---
-Chaotic Command has a dependency-free application runtime alongside a preserved Bit design workspace. Understand which code is active before changing the product so you extend the working application instead of rebuilding the original components.
+Chaotic Minds Command has a dependency-free application runtime alongside a preserved Bit design workspace. Understand which code is active before changing the product so you extend the working application instead of rebuilding the original components.
 
 ## Active application
 

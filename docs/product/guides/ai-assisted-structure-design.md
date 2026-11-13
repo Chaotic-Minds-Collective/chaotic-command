@@ -2,26 +2,26 @@
 title: "Use AI-assisted structure design"
 description: "Create a constrained prompt, request a Discord server layout from an external AI assistant, and import the suggested roles and channels for review."
 ---
-Chaotic Command includes a user-directed AI-assisted workflow for designing a custom server structure. It does not connect to an AI provider. You choose an external assistant, copy the prompt, and bring its JSON response back into the editor.
+Chaotic Minds Command includes a user-directed AI-assisted workflow for designing a custom server structure. It does not connect to an AI provider. You choose an external assistant, copy the prompt, and bring its JSON response back into the editor.
 
 ## What you need
 
 - A server brief describing the community, its purpose, and the kinds of spaces it needs.
 - Access to an external AI assistant, such as ChatGPT.
-- The Chaotic Command custom structure editor.
+- The Chaotic Minds Command custom structure editor.
 
 Your brief is copied into a prompt that you choose to share. Do not include passwords, tokens, private member details, or other sensitive information.
 
 ## Create the prompt
 
-1. Select **Custom structure** in Chaotic Command.
+1. Select **Custom structure** in Chaotic Minds Command.
 2. Enter a short description of the server in the AI-assisted design brief.
 3. Select **Build AI prompt**.
 4. Select **Copy prompt**.
 5. Open the external AI assistant you want to use and paste the prompt.
 6. Ask the assistant to return the requested JSON only.
 
-Chaotic Command does not automatically transmit the brief or make an AI API request. Any information you paste into another AI service is subject to that service's own terms and privacy settings.
+Chaotic Minds Command does not automatically transmit the brief or make an AI API request. Any information you paste into another AI service is subject to that service's own terms and privacy settings.
 
 ## Import the response
 

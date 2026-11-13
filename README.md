@@ -1,4 +1,7 @@
-# Chaotic Command
+# Chaotic Minds Command
+
+The Discord setup and server-management product from **Chaotic Minds Command (CC)**.
+
 
 A working, dependency-free Discord setup MVP alongside the original Bit/GuildPilot design prototype.
 

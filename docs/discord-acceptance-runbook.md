@@ -1,6 +1,6 @@
 # Discord acceptance test and operator runbook
 
-Use this runbook to configure a local Chaotic Command instance and verify its live Discord integration before considering any deployment. Automated tests use fixtures. They do not prove that OAuth, bot installation, permissions, or live Discord writes work.
+Use this runbook to configure a local Chaotic Minds Command instance and verify its live Discord integration before considering any deployment. Automated tests use fixtures. They do not prove that OAuth, bot installation, permissions, or live Discord writes work.
 
 **Use a disposable Discord server only.** Never run live acceptance tests against a production, customer, or active community server.
 
@@ -8,9 +8,9 @@ Use this runbook to configure a local Chaotic Command instance and verify its li
 
 The current MVP supports a shared operator bot and customer-owned bots:
 
-- The operator configures one Discord application for Chaotic Command OAuth sign-in.
+- The operator configures one Discord application for Chaotic Minds Command OAuth sign-in.
 - The shared `DISCORD_BOT_TOKEN` is optional. If configured, it remains available as a shared bot.
-- Signed-in customers can connect up to five personal Discord bots. Chaotic Command verifies each bot token with Discord and stores it encrypted at rest.
+- Signed-in customers can connect up to five personal Discord bots. Chaotic Minds Command verifies each bot token with Discord and stores it encrypted at rest.
 - Customers can set a default personal bot and assign a different connected bot to an individual server.
 - Users sign in with their own Discord accounts and can manage only servers where their account owns the server or has Manage Server permission.
 - The selected bot must be installed in the selected server and have Manage Channels and Manage Roles. It does not need Administrator or privileged Gateway intents.
@@ -36,7 +36,7 @@ Before starting:
 ## 3. Prepare a disposable Discord server
 
 1. In the Discord client, create a new server.
-2. Give it a clear test-only name, such as `Chaotic Command Acceptance Test`.
+2. Give it a clear test-only name, such as `Chaotic Minds Command Acceptance Test`.
 3. Keep it empty except for Discord's default channel and roles.
 4. Do not invite community members or add real data.
 5. Keep the server available until all test cases and cleanup checks are complete.
@@ -58,7 +58,7 @@ Record that this is the disposable test server. Do not record or publish its ser
 8. Do not create a bot token for this OAuth application unless you also want to test the optional shared-bot path.
 9. Do not enable privileged Gateway intents. The app uses Discord REST requests and does not require them.
 
-The operator's OAuth application is used for user sign-in and server listing. Customer-owned bots are created separately and connected through the Chaotic Command UI.
+The operator's OAuth application is used for user sign-in and server listing. Customer-owned bots are created separately and connected through the Chaotic Minds Command UI.
 
 The app's sign-in flow uses the `identify` and `guilds` OAuth scopes. Its bot installation link uses the `bot` scope with Manage Channels and Manage Roles permissions.
 
@@ -149,18 +149,18 @@ The local server binds to loopback by default. Do not expose this development in
 5. Confirm the bot requests Manage Channels and Manage Roles, not Administrator.
 6. Authorize it for the disposable server.
 7. In Discord server settings, open the role list and move the bot's role above the roles the app will create.
-8. Return to Chaotic Command and reselect the test server.
+8. Return to Chaotic Minds Command and reselect the test server.
 9. Confirm bot readiness succeeds.
 
 If readiness fails, check that the selected bot is installed in the correct server, that both permissions are enabled, and that the bot role is high enough in the role hierarchy. Do not grant Administrator as a workaround.
 
 ## 8. Test customer-owned bot connection and assignment
 
-Use a separate temporary Discord application and bot for this section. Keep the bot token private and enter it only in the Chaotic Command connection form over HTTPS. Do not place a customer bot token in the operator's `.env` file.
+Use a separate temporary Discord application and bot for this section. Keep the bot token private and enter it only in the Chaotic Minds Command connection form over HTTPS. Do not place a customer bot token in the operator's `.env` file.
 
 1. In the Discord Developer Portal, create a test application and open its **Bot** page.
 2. Create or add the bot user, generate a bot token, and keep the token private.
-3. Sign in to the local Chaotic Command instance with the test Discord account.
+3. Sign in to the local Chaotic Minds Command instance with the test Discord account.
 4. Find **Your Discord bots**, paste the test bot token into **Discord bot token**, and select **Verify and connect bot**.
 5. Confirm the bot appears in the list with identity metadata only. Confirm the token is not displayed in the page or API response.
 6. Confirm the connected bot becomes the default bot.
@@ -269,7 +269,7 @@ Do not apply every test structure. Use preview and validation to test invalid ca
 4. Paste it into an external AI assistant of your choice.
 5. Request the supported JSON structure.
 6. Copy the JSON response without Markdown code fences.
-7. Paste it into Chaotic Command and import it into the editor.
+7. Paste it into Chaotic Minds Command and import it into the editor.
 8. Confirm the imported roles, categories, and channels are editable.
 9. Try importing JSON with an unsupported field and confirm it is rejected.
 10. Confirm import alone does not create a preview or write to Discord.

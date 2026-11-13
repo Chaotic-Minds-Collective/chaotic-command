@@ -1,8 +1,8 @@
-# Chaotic Command documentation index
+# Chaotic Minds Command documentation index
 
 ## Product guides (docs/product/)
 
-End-user and operator documentation for Chaotic Command itself - previously hosted separately. Start at [product/index.md](product/index.md); the guide set covers:
+End-user and operator documentation for Chaotic Minds Command itself - previously hosted separately. Start at [product/index.md](product/index.md); the guide set covers:
 
 | Area | Guides |
 | --- | --- |

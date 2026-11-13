@@ -1,8 +1,8 @@
 ---
 title: "What server members should expect"
-description: "Understand what Chaotic Command may add to your Discord server and which setup decisions remain with the server owner or administrators."
+description: "Understand what Chaotic Minds Command may add to your Discord server and which setup decisions remain with the server owner or administrators."
 ---
-Chaotic Command is operated by people who manage a Discord server. It is not currently a member self-service app, and ordinary members do not need to sign in to use its setup workflow.
+Chaotic Minds Command is operated by people who manage a Discord server. It is not currently a member self-service app, and ordinary members do not need to sign in to use its setup workflow.
 
 ## What you may see
 
@@ -18,4 +18,4 @@ Follow your server's rules and ask your server administrators if you are unsure 
 
 ## Who to contact
 
-Chaotic Command does not replace your server's moderation or support process. Contact your server owner or administrator for questions about role assignments, channel access, server rules, or changes made to the server.
+Chaotic Minds Command does not replace your server's moderation or support process. Contact your server owner or administrator for questions about role assignments, channel access, server rules, or changes made to the server.

@@ -1,6 +1,6 @@
 ---
 title: "Current feature status"
-description: "See which Chaotic Command capabilities are available today, the limits of the setup workflow, and features that are not currently implemented."
+description: "See which Chaotic Minds Command capabilities are available today, the limits of the setup workflow, and features that are not currently implemented."
 ---
 This page describes the functionality present in the current application baseline on the `main` branch. It separates implemented behavior from planned work and verification that still needs to happen.
 
@@ -32,15 +32,15 @@ This page describes the functionality present in the current application baselin
 
 ## Bring-your-own-bot boundaries
 
-You can connect up to five personal bots to your signed-in Discord account. Chaotic Command verifies each bot token with Discord and stores it encrypted at rest. The token is not returned in API responses. You can set a default bot and assign a different connected bot to an individual server.
+You can connect up to five personal bots to your signed-in Discord account. Chaotic Minds Command verifies each bot token with Discord and stores it encrypted at rest. The token is not returned in API responses. You can set a default bot and assign a different connected bot to an individual server.
 
-Your normal Chaotic Command Discord OAuth sign-in remains separate from your personal bot. You do not need to create a personal OAuth client secret or redirect URL. The selected bot must be installed in the server and have Manage Channels and Manage Roles before audit, preview, or apply.
+Your normal Chaotic Minds Command Discord OAuth sign-in remains separate from your personal bot. You do not need to create a personal OAuth client secret or redirect URL. The selected bot must be installed in the server and have Manage Channels and Manage Roles before audit, preview, or apply.
 
 Removing a personal bot deletes the stored credential and your account's server assignments. It does not revoke the token at Discord or remove the bot from Discord servers. See [connect your own Discord bot](../../customer-bring-your-own-bot.md).
 
 ## AI-assisted design boundaries
 
-The AI-assisted workflow is a manual copy-and-paste handoff. Chaotic Command does not call an AI provider, require an AI API key, or automatically send your server brief to an external service. You choose which external assistant to use.
+The AI-assisted workflow is a manual copy-and-paste handoff. Chaotic Minds Command does not call an AI provider, require an AI API key, or automatically send your server brief to an external service. You choose which external assistant to use.
 
 The imported response is untrusted input. Only the supported role and category/channel structure is accepted. The existing server-side validator remains authoritative. Review and edit the imported names, then create a fresh preview. Importing does not contact Discord or create server objects.
 

@@ -1,4 +1,4 @@
-# Chaotic Command Discord Bot (shared bot)
+# Chaotic Minds Command Discord Bot (shared bot)
 
 HTTP-only Discord bot for the Chaotic Minds Collective ecosystem, hosted on
 Cloudflare Workers (free tier, no gateway process, no spin-down).
@@ -21,7 +21,7 @@ Cloudflare Workers (free tier, no gateway process, no spin-down).
 
 ## One-time setup checklist (Developer Portal)
 
-1. Reuse the existing idle bot application, rename it "Chaotic Command".
+1. Reuse the existing idle bot application, rename it "Chaotic Minds Command".
    - General Information: copy Application ID and Public Key.
    - Bot tab: Reset Token, store it in 1Password (never in chat or git).
 2. Installation page: enable Guild Install AND User Install.

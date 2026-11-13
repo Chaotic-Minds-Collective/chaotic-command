@@ -2,17 +2,17 @@
 title: "Protect credentials and operate safely"
 description: "Understand credential encryption, SQLite persistence, backup limits, Discord permissions, and the operational safeguards required before deployment."
 ---
-Use this guide when you configure, test, or operate a Chaotic Command instance. The application handles Discord OAuth sessions and bot credentials, so the server environment and persistent data directory must remain private.
+Use this guide when you configure, test, or operate a Chaotic Minds Command instance. The application handles Discord OAuth sessions and bot credentials, so the server environment and persistent data directory must remain private.
 
 ## Credential handling
 
-Chaotic Command stores customer-owned bot credentials encrypted at rest using AES-256-GCM. The token is verified with Discord before storage and is not returned in API responses.
+Chaotic Minds Command stores customer-owned bot credentials encrypted at rest using AES-256-GCM. The token is verified with Discord before storage and is not returned in API responses.
 
 The encryption key is derived from `SESSION_SECRET`. Keep that value stable across restarts and protect it separately from the database.
 
 > **Warning:** Changing or losing `SESSION_SECRET` makes existing encrypted sessions and bot credentials unreadable. It is not a routine credential rotation procedure.
 
-Removing a bot from Chaotic Command deletes its stored credential and account-owned server assignments. It does not revoke the token at Discord. If a token may have been exposed, reset it in the Discord Developer Portal.
+Removing a bot from Chaotic Minds Command deletes its stored credential and account-owned server assignments. It does not revoke the token at Discord. If a token may have been exposed, reset it in the Discord Developer Portal.
 
 ## SQLite storage and recovery
 

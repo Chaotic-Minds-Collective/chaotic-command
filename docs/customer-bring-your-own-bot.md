@@ -1,15 +1,15 @@
 # Connect your own Discord bot
 
-This guide explains how a signed-in account can connect up to five Discord bots that you personally control, and how the Chaotic Command application verifies, stores, and removes those bot credentials.
+This guide explains how a signed-in account can connect up to five Discord bots that you personally control, and how the Chaotic Minds Command application verifies, stores, and removes those bot credentials.
 
 > **Warning:** Bot tokens are secret credentials. Never paste a bot token into a public issue, screenshot, shared document, or chat message. Reset the token in the Discord Developer Portal if it may have been exposed.
 
 ## Before you begin
 
-- You have a Discord account and can sign in to Chaotic Command with it.
+- You have a Discord account and can sign in to Chaotic Minds Command with it.
 - You have or can create a Discord application with a bot user in the [Discord Developer Portal](https://discord.com/developers/applications).
 - You understand what the bot will be allowed to do in your servers.
-- You do not need to configure an OAuth client secret or redirect URL for your personal bot. Sign-in to Chaotic Command still uses its own **Sign in with Discord** flow.
+- You do not need to configure an OAuth client secret or redirect URL for your personal bot. Sign-in to Chaotic Minds Command still uses its own **Sign in with Discord** flow.
 
 ## Create a bot in the Discord Developer Portal
 
@@ -17,19 +17,19 @@ This guide explains how a signed-in account can connect up to five Discord bots 
 2. Select **New Application**, give it a name you recognize, and confirm.
 3. Open the **Bot** tab.
 4. Select **Reset Token** if you need a fresh secret, then copy it once and keep it safe.
-5. Leave the application's public key, client secret, and redirect URIs unchanged. Chaotic Command does not use your personal bot's OAuth configuration.
+5. Leave the application's public key, client secret, and redirect URIs unchanged. Chaotic Minds Command does not use your personal bot's OAuth configuration.
 
-## Connect the bot token to Chaotic Command
+## Connect the bot token to Chaotic Minds Command
 
 <!-- coderabbit-ai-generated:v1 -->
 
 <!-- coderabbit-ai-generated-section:v1:f8120c5af4726bfffe9b83a6d5b06b43b51f78eec9f21760f11b216d2a77f1ee -->
 
-1. Sign in to Chaotic Command with your Discord account.
+1. Sign in to Chaotic Minds Command with your Discord account.
 2. Open **Your Discord bots**.
 3. Enter your bot's token.
 4. Select **Verify and connect bot**.
-5. Wait for verification. Chaotic Command verifies the token with Discord and stores it encrypted at rest.
+5. Wait for verification. Chaotic Minds Command verifies the token with Discord and stores it encrypted at rest.
 
 <!-- /coderabbit-ai-generated:v1 -->
 
@@ -70,7 +70,7 @@ The app checks bot readiness before listing the server as ready.
 
 ## How your bot credential is handled
 
-Chaotic Command verifies the token with Discord, then stores it encrypted at rest with AES-256-GCM.
+Chaotic Minds Command verifies the token with Discord, then stores it encrypted at rest with AES-256-GCM.
 
 - The token is not returned in the bot list or any API response.
 - The encrypted credential is scoped to the account that connected the bot.
@@ -91,12 +91,12 @@ To disconnect a bot, open **Your Discord bots**, select the connected bot, and c
 
 Removing a bot:
 
-- Deletes the stored encrypted credential from Chaotic Command.
+- Deletes the stored encrypted credential from Chaotic Minds Command.
 - Removes your account's server assignments for that bot.
 - Leaves the Discord application and bot user intact; you can reconnect the same bot again later.
 - Does not revoke the Discord token. Reset the token in the Developer Portal if you no longer want it usable.
 
-Before removing a bot, note which servers use it. Removal deletes its per-server assignments, and Chaotic Command does not show a bot's server assignments anywhere, so you would need to reassign each server afterward from your own notes.
+Before removing a bot, note which servers use it. Removal deletes its per-server assignments, and Chaotic Minds Command does not show a bot's server assignments anywhere, so you would need to reassign each server afterward from your own notes.
 
 <!-- coderabbit-ai-generated:v1 -->
 
@@ -105,7 +105,7 @@ Before removing a bot, note which servers use it. Removal deletes its per-server
 To replace a token:
 
 1. Reset the token in the Discord Developer Portal and copy the new token.
-2. Remove the old connection in Chaotic Command using **Remove selected personal bot**. Removing it also deletes its server assignments.
+2. Remove the old connection in Chaotic Minds Command using **Remove selected personal bot**. Removing it also deletes its server assignments.
 3. Connect the bot again using the new token. Reconnecting makes it your default bot, even if it was not the default before removal. If you previously used a different default, restore it so servers without a bot assignment continue using the intended bot: choose **Choose a server** to clear the server selection, choose your previous default under **Your Discord bots**, and select **Use selected bot**.
 4. Restore each server assignment by selecting the server, choosing the reconnected bot, and selecting **Use selected bot**.
 
@@ -149,7 +149,7 @@ Do not grant Administrator as a workaround.
 
 ### I removed a bot, but it is still in my Discord server
 
-Removing a connection in Chaotic Command deletes the stored credential and your account's server assignments for that bot. It does not revoke the token at Discord or remove the bot itself from your server. If you no longer want the bot on a server, remove it in Discord as well (Server Settings > Members, or kick the bot from the server).
+Removing a connection in Chaotic Minds Command deletes the stored credential and your account's server assignments for that bot. It does not revoke the token at Discord or remove the bot itself from your server. If you no longer want the bot on a server, remove it in Discord as well (Server Settings > Members, or kick the bot from the server).
 
 ### The bot token may have been exposed
 

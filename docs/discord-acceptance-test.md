@@ -1,6 +1,6 @@
 # Discord acceptance test (disposable server only)
 
-This is a manual end-to-end test plan for the local Chaotic Command MVP. Automated CI uses fixtures and does not contact Discord. Do not run this procedure against a production, community, customer, or otherwise important server.
+This is a manual end-to-end test plan for the local Chaotic Minds Command MVP. Automated CI uses fixtures and does not contact Discord. Do not run this procedure against a production, community, customer, or otherwise important server.
 
 ## Safety rules
 
@@ -36,7 +36,7 @@ This is a manual end-to-end test plan for the local Chaotic Command MVP. Automat
 3. Inspect the Discord authorization screen. Confirm the requested bot permissions are Manage Channels and Manage Roles, not Administrator.
 4. Install the bot in the disposable server.
 5. In Discord server settings, move the bot's role above the roles the setup will create.
-6. Return to Chaotic Command, reselect the server, and confirm bot preflight succeeds.
+6. Return to Chaotic Minds Command, reselect the server, and confirm bot preflight succeeds.
 
 ## Test the read-only existing-server audit
 

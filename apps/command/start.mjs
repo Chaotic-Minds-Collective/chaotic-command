@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import { contentSecurityPolicy } from './csp.mjs';
 
-// Edge wrapper for Chaotic Command.
+// Edge wrapper for Chaotic Minds Command.
 // Runs the unchanged server.mjs on an internal loopback port and adds:
 //   1. Static routes for brand imagery and the homepage tab script.
 //   2. A CSP that additionally allows Google Fonts (styles + font files).
@@ -134,4 +134,4 @@ const server = http.createServer((req, res) => {
 server.requestTimeout = 30000;
 server.headersTimeout = 10000;
 server.once('error', error => { console.error('Edge server failed:', error.message); stop(1); });
-server.listen(externalPort, process.env.HOST || '127.0.0.1', () => console.log('Chaotic Command edge listening. Open APP_ORIGIN in your browser.'));
+server.listen(externalPort, process.env.HOST || '127.0.0.1', () => console.log('Chaotic Minds Command edge listening. Open APP_ORIGIN in your browser.'));

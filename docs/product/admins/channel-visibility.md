@@ -2,7 +2,7 @@
 title: "Review channel visibility and access"
 description: "Understand how template channels inherit visibility and what Discord administrators must configure before members use the new channels."
 ---
-Chaotic Command creates a basic category and channel layout. It does not configure private-channel permission overwrites or decide which members should be allowed into each channel.
+Chaotic Minds Command creates a basic category and channel layout. It does not configure private-channel permission overwrites or decide which members should be allowed into each channel.
 
 ## How visibility works
 
@@ -20,7 +20,7 @@ After applying a template, inspect the category and each channel in Discord:
 4. Decide which roles should send messages or manage the channel.
 5. Verify the result with an appropriate test account before directing members there.
 
-Use Discord's own permission controls to configure access. Chaotic Command does not make these decisions for you.
+Use Discord's own permission controls to configure access. Chaotic Minds Command does not make these decisions for you.
 
 > **Warning:** Do not put private support conversations, staff discussions, or sensitive information in a newly created channel until you have verified its access settings in Discord.
 

@@ -213,7 +213,7 @@ async function selectBot() {
 async function removeBot() {
   const id = $('active-bot').value;
   if (!id || id === 'shared') throw new Error('Choose one of your personal bots to remove.');
-  if (!window.confirm('Remove this bot credential from Chaotic Command? This will not delete the Discord application or remove the bot from servers.')) return;
+  if (!window.confirm('Remove this bot credential from Chaotic Minds Command? This will not delete the Discord application or remove the bot from servers.')) return;
   await api(`/api/bots/${id}/delete`, {});
   await refreshBots();
   message('Stored bot credential removed.');
@@ -424,7 +424,7 @@ $('import-ai-structure').onclick = () => {
 $('custom-roles').oninput = clearPlan;
 $('custom-categories').oninput = clearPlan;
 $('logout').onclick = () => run(async () => {
-  if (!window.confirm('Sign out of Chaotic Command?')) { message('Sign-out cancelled.'); return; }
+  if (!window.confirm('Sign out of Chaotic Minds Command?')) { message('Sign-out cancelled.'); return; }
   await api('/api/logout', {}); location.reload();
 });
 $('preview').onclick = () => run(async () => {

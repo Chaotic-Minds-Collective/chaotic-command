@@ -2,12 +2,12 @@
 title: "Run and test the application locally"
 description: "Set up the dependency-free Node.js application, configure local Discord credentials, run its test suite, and understand what the tests do not cover."
 ---
-Use Node.js 24 or newer to run the active Chaotic Command application locally. The runtime uses built-in Node.js HTTP, crypto, and SQLite modules, so it does not require installing application dependencies.
+Use Node.js 24 or newer to run the active Chaotic Minds Command application locally. The runtime uses built-in Node.js HTTP, crypto, and SQLite modules, so it does not require installing application dependencies.
 
 ## Requirements
 
 - Node.js 24 or newer.
-- A local checkout of [Chaotic Command on GitHub](https://github.com/Chaotic-Minds-Collective/Chaotic-Command).
+- A local checkout of [Chaotic Minds Command on GitHub](https://github.com/Chaotic-Minds-Collective/Chaotic-Command).
 - A Discord application for OAuth sign-in when you need to test authenticated workflows.
 - A disposable Discord server for any manual live acceptance test.
 
@@ -27,8 +27,8 @@ Set the values needed for your local test:
 | --- | --- |
 | `PORT` | Local HTTP port. Defaults to `3000`. |
 | `APP_ORIGIN` | The exact local or deployed application origin used by OAuth and request checks |
-| `DISCORD_CLIENT_ID` | Application ID for the Chaotic Command OAuth application |
-| `DISCORD_CLIENT_SECRET` | OAuth client secret for the Chaotic Command application |
+| `DISCORD_CLIENT_ID` | Application ID for the Chaotic Minds Command OAuth application |
+| `DISCORD_CLIENT_SECRET` | OAuth client secret for the Chaotic Minds Command application |
 | `DISCORD_BOT_TOKEN` | Optional operator-configured shared bot token |
 | `SESSION_SECRET` | Stable secret used to encrypt stored sessions and bot credentials |
 | `DATA_DIR` | Private directory for the SQLite database. Defaults to `.data`. |

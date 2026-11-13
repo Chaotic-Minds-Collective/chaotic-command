@@ -83,7 +83,7 @@ export function createApp(config = {}) {
     const assignment = guildId ? db.prepare('SELECT bot_id FROM guild_bot_selections WHERE owner_id = ? AND guild_id = ?').get(session.user.id, guildId) : null;
     const selectedId = assignment?.bot_id || session.selectedBotId;
     if (selectedId === 'shared' || (!selectedId && sharedBotConfigured)) {
-      if (sharedBotConfigured) return { id: 'shared', discordBotId: env.DISCORD_CLIENT_ID, username: 'Chaotic Command shared bot', token: env.DISCORD_BOT_TOKEN };
+      if (sharedBotConfigured) return { id: 'shared', discordBotId: env.DISCORD_CLIENT_ID, username: 'Chaotic Minds Command shared bot', token: env.DISCORD_BOT_TOKEN };
       throw new HttpError(409, 'The shared bot is not available. Choose one of your connected bots.');
     }
     if (selectedId) {
@@ -281,7 +281,7 @@ export function createApp(config = {}) {
       if (path === '/api/bots' && req.method === 'GET') {
         const rows = db.prepare('SELECT id, discord_bot_id, username, created_at FROM user_bots WHERE owner_id = ? ORDER BY created_at DESC').all(session.user.id);
         const bots = rows.map(row => ({ id: row.id, discordBotId: row.discord_bot_id, username: row.username, createdAt: row.created_at, inviteUrl: `https://discord.com/oauth2/authorize?${new URLSearchParams({ client_id: row.discord_bot_id, scope: 'bot', permissions: '268435472' })}` }));
-        const sharedBot = sharedBotConfigured ? { id: 'shared', username: 'Chaotic Command shared bot', inviteUrl: `https://discord.com/oauth2/authorize?${new URLSearchParams({ client_id: env.DISCORD_CLIENT_ID, scope: 'bot', permissions: '268435472' })}` } : null;
+        const sharedBot = sharedBotConfigured ? { id: 'shared', username: 'Chaotic Minds Command shared bot', inviteUrl: `https://discord.com/oauth2/authorize?${new URLSearchParams({ client_id: env.DISCORD_CLIENT_ID, scope: 'bot', permissions: '268435472' })}` } : null;
         return json(res, 200, { bots, selectedBotId: session.selectedBotId || (sharedBotConfigured ? 'shared' : ''), sharedBot });
       }
       if (path === '/api/bots' && req.method === 'POST') {

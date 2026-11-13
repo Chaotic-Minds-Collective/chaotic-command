@@ -1,12 +1,12 @@
 ---
 title: "Troubleshoot common setup problems"
-description: "Resolve common Chaotic Command issues with Discord sign-in, missing servers, bot readiness, permission warnings, expired previews, and partial setup."
+description: "Resolve common Chaotic Minds Command issues with Discord sign-in, missing servers, bot readiness, permission warnings, expired previews, and partial setup."
 ---
-Use this guide when Chaotic Command cannot list your server, the bot is not ready, or a setup preview cannot be applied.
+Use this guide when Chaotic Minds Command cannot list your server, the bot is not ready, or a setup preview cannot be applied.
 
 ## I cannot sign in
 
-Confirm that you are using the Discord sign-in option provided by your Chaotic Command instance. If sign-in is unavailable or disabled, contact the person who operates that instance. The Discord connection may not be configured.
+Confirm that you are using the Discord sign-in option provided by your Chaotic Minds Command instance. If sign-in is unavailable or disabled, contact the person who operates that instance. The Discord connection may not be configured.
 
 ## My server is missing
 
@@ -16,13 +16,13 @@ Confirm that you are using the Discord sign-in option provided by your Chaotic C
 
 ## The bot is not ready
 
-Use the installation link shown by Chaotic Command for the selected server. Confirm the bot was added to that server with Manage Channels and Manage Roles. Move the bot's role above the roles it needs to create, then return to Chaotic Command and reselect the server.
+Use the installation link shown by Chaotic Minds Command for the selected server. Confirm the bot was added to that server with Manage Channels and Manage Roles. Move the bot's role above the roles it needs to create, then return to Chaotic Minds Command and reselect the server.
 
 Do not grant Administrator as a workaround.
 
 ## The preview shows an elevated permission warning
 
-Open the matching role in Discord and inspect its permissions. Do not apply until you understand why the permission is present and confirm it is intentional. Chaotic Command does not change permissions on reused roles.
+Open the matching role in Discord and inspect its permissions. Do not apply until you understand why the permission is present and confirm it is intentional. Chaotic Minds Command does not change permissions on reused roles.
 
 ## The app reports duplicate or ambiguous objects
 

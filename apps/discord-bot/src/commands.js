@@ -1,4 +1,4 @@
-// Slash command definitions for the Chaotic Command bot.
+// Slash command definitions for the Chaotic Minds Command bot.
 // Registered globally via PUT /applications/{id}/commands (the /register route).
 
 const GUILD_ONLY = { integration_types: [0], contexts: [0] };
@@ -6,7 +6,7 @@ const GUILD_ONLY = { integration_types: [0], contexts: [0] };
 export const COMMANDS = [
   {
     name: 'setup',
-    description: 'Configure the Chaotic Command bot for this server',
+    description: 'Configure the Chaotic Minds Command bot for this server',
     default_member_permissions: '32', // MANAGE_GUILD
     ...GUILD_ONLY,
   },
@@ -112,7 +112,7 @@ export const COMMANDS = [
   },
   {
     name: 'help',
-    description: 'What the Chaotic Command bot can do',
+    description: 'What the Chaotic Minds Command bot can do',
     integration_types: [0, 1],
     contexts: [0, 1, 2],
   },

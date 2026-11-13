@@ -17,14 +17,14 @@ Both adapters expose the same async API (`prepare().get/all/run`, `exec`, `query
 
 SQL compatibility notes:
 - All statements use `?` placeholders; the Postgres adapter rewrites them to `$n` automatically.
-- SQLite-only syntax (`INSERT OR REPLACE`, `COLLATE NOCASE`, `PRAGMA`) is translated for Postgres.
+- SQLite-only syntax (`INSERT OR REPLACE`, `COLLATE NOCASE`, `PRAGMA`) is translated for Postgres. Upserts are accepted only for the frozen `sessions`, `notes`, and `guild_bot_selections` table/column definitions; values must be `?` placeholders and are passed separately to the PostgreSQL driver. Unknown tables, columns, or value expressions are rejected.
 - Schema creation happens automatically on startup (`openDb` calls `migrate()`).
 
 ## Migrations
 
 Numbered `.sql` files live in `apps/command/db/migrations/` and run in filename order. Applied migrations are recorded in `schema_migrations`, so files must never be edited after release - add a new numbered file instead.
 
-Base schema creation, pending-file checks, SQL execution, and migration recording share one transaction. PostgreSQL uses one checked-out client and a transaction advisory lock; SQLite enables WAL before `BEGIN IMMEDIATE` and retries busy acquisition asynchronously for up to five seconds. A failed batch rolls back all changes from that batch, and failed startup closes the adapter. Migration files must contain transaction-compatible SQL and must not manage their own transactions.
+Base schema creation, pending-file checks, SQL execution, and migration recording share one transaction. Migration filenames and timestamps are inserted with bound parameters rather than interpolated into SQL text. PostgreSQL uses one checked-out client and a transaction advisory lock; SQLite enables WAL before `BEGIN IMMEDIATE` and retries busy acquisition asynchronously for up to five seconds. A failed batch rolls back all changes from that batch, and failed startup closes the adapter. Migration files must contain transaction-compatible SQL and must not manage their own transactions.
 
 Run manually:
 

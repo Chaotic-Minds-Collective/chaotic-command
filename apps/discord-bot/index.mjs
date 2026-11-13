@@ -135,7 +135,7 @@ async function registerHealthCommand() {
     body: JSON.stringify([
       {
         name: 'chaotic-health',
-        description: 'Check the Chaotic Command bot status',
+        description: 'Check the Chaotic Minds Command bot status',
       },
     ]),
   });

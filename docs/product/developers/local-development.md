@@ -7,7 +7,7 @@ Use Node.js 24 or newer to run the active Chaotic Minds Command application loca
 ## Requirements
 
 - Node.js 24 or newer.
-- A local checkout of [Chaotic Minds Command on GitHub](https://github.com/Chaotic-Minds-Collective/Chaotic-Command).
+- A local checkout of [Chaotic Minds Command on GitHub](https://github.com/Chaotic-Minds-Collective/cc-command-site).
 - A Discord application for OAuth sign-in when you need to test authenticated workflows.
 - A disposable Discord server for any manual live acceptance test.
 

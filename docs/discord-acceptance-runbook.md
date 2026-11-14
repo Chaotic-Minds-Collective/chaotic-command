@@ -67,7 +67,7 @@ The app's sign-in flow uses the `identify` and `guilds` OAuth scopes. Its bot in
 ### Requirements
 
 - Node.js 24 or newer.
-- A local checkout of the `Chaotic-Minds-Collective/Chaotic-Command` repository.
+- A local checkout of the `Chaotic-Minds-Collective/cc-command-site` repository.
 - The temporary Discord application values from the previous section.
 
 ### Create the environment file

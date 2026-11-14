@@ -30,7 +30,7 @@ Do not route a user's Discord token through an operator-owned connection unless 
 
 ## GitHub
 
-The private application repository is [Chaotic-Minds-Collective/Chaotic-Command](https://github.com/Chaotic-Minds-Collective/Chaotic-Command). Treat its `main` branch as the implementation source of truth.
+The application repository is [Chaotic-Minds-Collective/cc-command-site](https://github.com/Chaotic-Minds-Collective/cc-command-site). Treat its `main` branch as the implementation source of truth.
 
 Product documentation is maintained in this repository under docs/product/, alongside the application code.
 
